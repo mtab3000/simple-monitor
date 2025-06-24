@@ -1,3 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
 .venv/
-**pycache**/
+venv/
+ENV/
+env/
+
+# Data Files
 *.csv
+*.log
+*.db
+*.sqlite3
+
+# Configuration (local configs should not be committed)
+config.yaml
+config.yml
+config.json
+
+# Cache and temp files
+hostname_cache.json
+*.tmp
+*.temp
+
+# Backups
+backups/
+*.backup
+*.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Local development
+local/
+dev/
+test_output/
