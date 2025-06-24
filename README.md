@@ -37,6 +37,8 @@ A beautiful, real-time monitoring solution for Bitaxe Gamma mining devices with 
 
 ### 🏗️ **Enterprise Ready**
 - **Docker containerization** with docker-compose orchestration
+- **Advanced database system** with SQLite for performance analytics
+- **Predictive analytics** with anomaly detection and maintenance alerts
 - **Comprehensive test suite** with 80%+ code coverage
 - **CI/CD pipeline** with automated code quality checks
 - **Security analysis** with CodeQL integration
@@ -91,7 +93,11 @@ A beautiful, real-time monitoring solution for Bitaxe Gamma mining devices with 
 
 4. **View the dashboard:**
    ```bash
+   # Basic monitoring
    python viewer.py --live
+   
+   # Enhanced monitoring with database and analytics
+   python enhanced_monitor.py
    ```
 
 ## 📖 Usage
@@ -137,6 +143,30 @@ python viewer.py --summary
 ```bash
 python viewer.py --summary --detailed
 ```
+
+### Enhanced Monitoring with Database & Analytics
+
+**Start enhanced monitoring:**
+```bash
+python enhanced_monitor.py
+```
+
+**Database migration from CSV:**
+```bash
+python src/data_migration.py --action migrate
+```
+
+**Enhanced Features:**
+- **SQLite database** for advanced data storage and analysis
+- **Performance scoring** with A+ to F grades based on multiple factors
+- **Anomaly detection** using statistical analysis
+- **Predictive maintenance** alerts based on performance trends
+- **Growth metrics** with trend analysis over time
+- **Fleet analytics** with comparative performance insights
+- **Automated alerts** for temperature, hashrate, and efficiency issues
+- **Historical analysis** with hourly and daily aggregations
+
+**See [Database & Analytics Documentation](docs/DATABASE_ANALYTICS.md) for detailed information.**
 
 ### Docker Commands
 
@@ -263,7 +293,13 @@ simple-monitor/
 │       └── codeql.yml   # Security analysis
 ├── src/
 │   ├── collector.py      # Data collection and CSV handling
-│   └── cli_view.py       # Dashboard and visualization
+│   ├── cli_view.py       # Dashboard and visualization
+│   ├── database.py       # SQLite database management
+│   ├── analytics.py      # Performance analysis and predictions
+│   ├── enhanced_collector.py # Enhanced monitoring with analytics
+│   └── data_migration.py # CSV to database migration tool
+├── docs/
+│   └── DATABASE_ANALYTICS.md # Database and analytics documentation
 ├── tests/
 │   ├── __init__.py      # Test package initialization
 │   ├── test_collector.py # Unit tests for collector
@@ -282,6 +318,7 @@ simple-monitor/
 ├── LICENSE          # MIT license
 ├── README.md       # This documentation
 ├── monitor.py     # Main monitoring script
+├── enhanced_monitor.py # Enhanced monitoring with database
 ├── viewer.py     # Dashboard launcher
 └── setup.py     # Installation and setup
 ```
