@@ -20,12 +20,12 @@ def main():
     if not config_path.exists() and example_config.exists():
         print("Creating default configuration file...")
         shutil.copy2(example_config, config_path)
-        print(f"✓ Created config.yaml from examples/config.yaml")
-        print("⚠️  Please edit config.yaml to set your miner IP addresses!")
+        print("Created config.yaml from examples/config.yaml")
+        print("WARNING: Please edit config.yaml to set your miner IP addresses!")
     elif config_path.exists():
-        print("✓ Configuration file already exists")
+        print("Configuration file already exists")
     else:
-        print("❌ No example configuration found!")
+        print("ERROR: No example configuration found!")
     
     # Create data directories
     data_dir = script_dir / "data"
@@ -34,16 +34,17 @@ def main():
     for dir_path in [data_dir, backups_dir]:
         if not dir_path.exists():
             dir_path.mkdir(parents=True, exist_ok=True)
-            print(f"✓ Created directory: {dir_path.name}")
+            print(f"Created directory: {dir_path.name}")
     
     # Check Python dependencies
     print("\nChecking dependencies...")
     try:
         import yaml
         import requests
-        print("✓ All required dependencies are installed")
+        import rich
+        print("All required dependencies are installed")
     except ImportError as e:
-        print(f"❌ Missing dependency: {e}")
+        print(f"Missing dependency: {e}")
         print("Run: pip install -r requirements.txt")
         return
     
@@ -54,16 +55,9 @@ def main():
     print("3. Run: python viewer.py --summary (to view data)")
     print("4. Run: python viewer.py --live (for live dashboard)")
     
-    print("\nProject structure:")
-    print("├── monitor.py         # Start data collection")
-    print("├── viewer.py          # View collected data")
-    print("├── config.yaml        # Your configuration")
-    print("├── src/               # Source code")
-    print("├── tools/             # Utilities & repair tools")
-    print("├── docs/              # Documentation")
-    print("├── examples/          # Example configurations")
-    print("├── data/              # Sample data files")
-    print("└── backups/           # Automatic backups")
+    if config_path.exists():
+        print(f"\nConfiguration file: {config_path}")
+        print("Edit this file to set your miner IP addresses")
 
 if __name__ == "__main__":
     main()

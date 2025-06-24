@@ -13,7 +13,6 @@ import time
 import yaml
 import requests
 import json
-import fcntl
 import tempfile
 import shutil
 import threading
@@ -23,6 +22,13 @@ import os
 import sys
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+# fcntl is Unix-only, not needed for Windows file locking
+try:
+    import fcntl
+    HAS_FCNTL = True
+except ImportError:
+    HAS_FCNTL = False
 
 class BitaxeCollector:
     def __init__(self, config_path=None):

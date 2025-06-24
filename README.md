@@ -1,12 +1,8 @@
 # 🚀 Bitaxe Monitor
 
-A professional, enterprise-grade monitoring solution for Bitaxe Bitcoin miners featuring real-time data collection, robust error handling, and comprehensive visualization tools.
+A professional monitoring solution for Bitaxe Bitcoin miners featuring real-time data collection, robust error handling, and comprehensive visualization tools.
 
-[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
-## ✨ Features
+## ✨ Key Features
 
 ### 🔌 **Real API Integration**
 - Direct connection to Bitaxe miners via REST API
@@ -14,53 +10,23 @@ A professional, enterprise-grade monitoring solution for Bitaxe Bitcoin miners f
 - Smart status detection and health monitoring
 - Automatic retry logic with configurable timeouts
 
-### 🛡️ **Enterprise-Grade Reliability**
-- **Robust CSV handling** with corruption prevention
+### 🛡️ **Robust & Reliable**
+- **CSV corruption prevention** with atomic writes
 - **Persistent hostname caching** for flaky network responses
 - **Automatic backups** and data validation
-- **Thread-safe operations** and atomic file writes
+- **Thread-safe operations** and error recovery
 - **Self-healing system** that recovers from errors
 
-### 📊 **Advanced Monitoring**
+### 📊 **Professional Monitoring**
 - **Real-time dashboard** with live updates
 - **Fleet-wide statistics** and performance metrics
-- **Mining efficiency calculations** (J/TH, GH/J)
-- **Temperature monitoring** (ASIC + Voltage Regulator)
-- **Network diagnostics** (WiFi signal, connectivity)
-
-### 🔧 **Professional Tools**
-- **CSV repair utility** for data recovery
-- **Data validation** and integrity checking
-- **Backup management** with automatic rotation
-- **Configuration validation** and setup assistance
-
-## 🏗️ Project Structure
-
-```
-bitaxe-monitor/
-├── 📄 monitor.py          # Main launcher - start data collection
-├── 📄 viewer.py           # Data viewer launcher
-├── 📄 setup.py            # Setup and configuration tool
-├── 📄 config.yaml         # Your configuration (created by setup)
-├── 📁 src/                # Source code
-│   ├── collector.py       # Enhanced data collector
-│   └── cli_view.py        # Rich CLI viewer/dashboard
-├── 📁 tools/              # Utilities and maintenance
-│   ├── csv_repair.py      # CSV repair and recovery
-│   ├── setup_improvements.py # Migration tools
-│   └── collector_original_backup.py # Original version
-├── 📁 docs/               # Documentation
-│   └── IMPROVEMENTS.md    # Detailed improvement log
-├── 📁 examples/           # Example configurations
-│   └── config.yaml        # Template configuration
-├── 📁 data/               # Sample and backup data
-│   └── *.csv             # Sample data files
-└── 📁 backups/           # Automatic backups (created at runtime)
-```
+- **Mining efficiency calculations** (J/TH)
+- **Temperature monitoring** (ASIC + VR)
+- **Network diagnostics** and connectivity status
 
 ## 🚀 Quick Start
 
-### 1. **Setup**
+### 1. **Installation**
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/bitaxe-monitor.git
@@ -68,22 +34,24 @@ cd bitaxe-monitor
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Run setup (creates config.yaml)
-python setup.py
 ```
 
-### 2. **Configure**
-Edit `config.yaml` with your miner details:
+### 2. **Setup Configuration**
+```bash
+# Run setup to create config.yaml
+python setup.py
+```
+This creates `config.yaml` in the project root. Edit it with your miner IP addresses:
+
 ```yaml
 miners:
   - 192.168.1.45
   - 192.168.1.46
   - 192.168.1.47
 
-poll_interval: 30           # Seconds between polls
-csv_path: metrics.csv       # Data output file
-timeout: 10                 # HTTP timeout
+poll_interval: 30
+csv_path: metrics.csv
+timeout: 10
 ```
 
 ### 3. **Start Monitoring**
@@ -98,35 +66,83 @@ python viewer.py --live
 python viewer.py --summary
 ```
 
+## 📁 Project Structure
+
+```
+bitaxe-monitor/
+├── monitor.py          # Main launcher - start data collection
+├── viewer.py           # Data viewer - live dashboard and summaries
+├── setup.py            # Setup tool - creates config.yaml
+├── config.yaml         # Your configuration (created by setup.py)
+├── metrics.csv         # Data output (created when monitoring starts)
+├── hostname_cache.json # Hostname cache (created automatically)
+├── src/                # Source code
+│   ├── collector.py    # Data collector engine
+│   └── cli_view.py     # CLI viewer/dashboard
+├── tools/              # Utilities and maintenance
+│   ├── csv_repair.py   # CSV repair and recovery tools
+│   └── setup_improvements.py # Migration utilities
+├── examples/           # Example configurations and templates
+├── docs/               # Documentation
+├── data/               # Sample data files
+└── backups/            # Automatic backups (created at runtime)
+```
+
 ## 📊 Collected Metrics
 
-### ⚡ **Core Mining Data**
-| Metric | Description | Unit |
-|--------|-------------|------|
-| Hashrate | Current hashing performance | GH/s, TH/s |
-| Temperature | ASIC and VR temperatures | °C |
-| Power | Real-time consumption | Watts |
-| Efficiency | Performance per watt | J/TH |
-| Voltage | Input and core voltages | Volts |
+### Core Performance Data
+- **Hashrate**: Current performance (GH/s, TH/s)
+- **Temperature**: ASIC and voltage regulator temperatures
+- **Power**: Real-time consumption (Watts)
+- **Efficiency**: Performance per watt (J/TH)
+- **Voltage**: Input and core voltages
 
-### 🔍 **Advanced Diagnostics**
-| Metric | Description | Purpose |
-|--------|-------------|---------|
-| WiFi RSSI | Signal strength | Network diagnostics |
-| Share Stats | Accepted/rejected shares | Mining performance |
-| Uptime | Operating time | Reliability tracking |
-| Fan Control | Speed & RPM | Thermal management |
-| Pool Info | Connected pool details | Mining setup |
+### Mining Statistics
+- **Shares**: Accepted and rejected share counts
+- **Uptime**: Operating time tracking
+- **Pool Info**: Connected pool details
+- **Best Difficulty**: Highest difficulty achieved
 
-### 🏥 **Health Monitoring**
-- **🟢 Online**: Normal operation
-- **🟡 Warning**: Performance issues
-- **🔴 Critical**: Hardware problems
-- **⚫ Offline**: Connection lost
+### System Health
+- **WiFi Signal**: RSSI strength monitoring
+- **Fan Control**: Speed and RPM tracking
+- **Status**: Comprehensive health assessment
+- **Network**: Connectivity diagnostics
 
-## 🛠️ Advanced Features
+## 🔍 Status Indicators
 
-### 🔧 **CSV Repair Tools**
+The monitor provides intelligent status detection:
+
+- **🟢 ONLINE**: Normal operation
+- **🟡 NO HASH**: Zero hashrate detected  
+- **🔴 HOT**: Overheating (>85°C)
+- **🟠 WIFI**: WiFi connectivity issues
+- **🔴 REJECT**: High share rejection rate (>10%)
+- **🔴 TIMEOUT**: API request timeout
+- **🔴 OFFLINE**: Connection failed
+
+## 🖥️ Dashboard Features
+
+### Live Dashboard (`python viewer.py --live`)
+- Real-time updates every 2 seconds
+- Color-coded status indicators  
+- Fleet performance summary
+- Individual miner details
+
+### Summary View (`python viewer.py --summary`)
+- Quick overview of all miners
+- Latest metrics and status
+- Performance statistics
+- Fleet totals and averages
+
+### Detailed Mode (`python viewer.py --summary --detailed`)
+- Extended metrics display
+- Additional diagnostic information
+- Advanced performance indicators
+
+## 🔧 Advanced Tools
+
+### CSV Repair Utility
 ```bash
 # Analyze file for corruption
 python tools/csv_repair.py analyze metrics.csv
@@ -134,71 +150,38 @@ python tools/csv_repair.py analyze metrics.csv
 # Repair corrupted data
 python tools/csv_repair.py repair corrupted_file.csv
 
-# Get detailed statistics
+# Get detailed statistics  
 python tools/csv_repair.py stats metrics.csv
 
 # Merge multiple files
 python tools/csv_repair.py merge output.csv file1.csv file2.csv
 ```
 
-### 🔄 **Backup Management**
+### Backup Management
 - **Automatic backups** every 100 collection cycles
 - **Backup rotation** (keeps last 10 files)
 - **Manual backup tools** for data preservation
 - **Recovery procedures** for data loss scenarios
 
-### 🌐 **Network Resilience**
-- **Hostname caching** survives network outages
-- **Cached values** shown with `*` indicator
-- **Automatic retry** with exponential backoff
-- **Graceful degradation** when miners are offline
+## ⚙️ Configuration
 
-## 📈 Dashboard Features
+The `config.yaml` file (created by `python setup.py`) contains:
 
-### 🖥️ **Live Dashboard**
-```bash
-python viewer.py --live
-```
-- Real-time updates every 2 seconds
-- Color-coded status indicators
-- Fleet performance summary
-- Individual miner details
-
-### 📋 **Summary View**
-```bash
-python viewer.py --summary
-```
-- Quick overview of all miners
-- Latest metrics and status
-- Performance statistics
-- Error summaries
-
-### 🔍 **Detailed Mode**
-```bash
-python viewer.py --live --detailed
-```
-- Extended metrics display
-- Additional diagnostic information
-- Advanced performance indicators
-
-## 🔧 Configuration Options
-
-### Basic Configuration (`config.yaml`)
 ```yaml
-# Miner IP addresses
+# Miner IP addresses to monitor
 miners:
   - 192.168.1.45
   - 192.168.1.46
 
-# Timing settings
-poll_interval: 30          # Polling frequency (seconds)
-timeout: 10                # HTTP timeout (seconds)
+# Polling settings
+poll_interval: 30          # Seconds between polls
+timeout: 10                # HTTP timeout
 retries: 3                 # Number of retries
 
-# File settings
-csv_path: metrics.csv      # Output file path
+# File settings  
+csv_path: metrics.csv      # Output file
 backup_frequency: 100      # Backup every N cycles
-validate_csv: true         # Enable CSV validation
+validate_csv: true         # Enable validation
 
 # Optional: Display names
 aliases:
@@ -206,114 +189,81 @@ aliases:
   - "Miner-02"
 ```
 
-### Advanced Settings
-- **Backup frequency**: Configure automatic backup intervals
-- **Validation**: Enable/disable CSV integrity checking
-- **Retry strategy**: Customize network retry behavior
-- **File paths**: Relative or absolute path configurations
-
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
 **❌ "Connection failed" errors**
-```bash
-# Check miner connectivity
-ping 192.168.1.45
+- Check miner IP addresses in `config.yaml`
+- Verify miners are powered on and connected to WiFi
+- Test connectivity: `ping 192.168.1.45`
 
-# Verify API endpoint
-curl http://192.168.1.45/api/system/info
-
-# Check configuration
-python setup.py
-```
-
-**❌ "CSV corruption detected"**
-```bash
-# Analyze the problem
-python tools/csv_repair.py analyze metrics.csv
-
-# Attempt repair
-python tools/csv_repair.py repair metrics.csv metrics_fixed.csv
-```
+**❌ "config.yaml not found"**
+- Run `python setup.py` to create configuration file
+- Edit the created `config.yaml` with your miner IPs
 
 **❌ "No data in viewer"**
-```bash
-# Start data collection first
-python monitor.py
+- Start data collection first: `python monitor.py`
+- Let it run for a few cycles to generate data
+- Check if `metrics.csv` exists and has data
 
-# Check if CSV exists and has data
-python tools/csv_repair.py stats metrics.csv
-```
+**❌ CSV corruption detected**
+- Use repair tools: `python tools/csv_repair.py analyze metrics.csv`
+- Automatic backups available in `backups/` directory
 
 ### Network Requirements
-- ✅ Miners and monitoring computer on same network
-- ✅ Port 80 (HTTP) access to miners
-- ✅ Stable WiFi connection for miners
-- ✅ Python 3.7+ with required packages
+- Miners and monitoring computer on same network
+- Port 80 (HTTP) access to miners  
+- Stable WiFi connection for miners
+- Python 3.7+ with required packages
 
-## 📊 Data Export & Integration
+## 📈 Data Export
 
 ### CSV Format
-The system generates CSV files with 32 columns including:
-- Timestamps and miner identification
-- Performance metrics (hashrate, power, efficiency)
-- Thermal data (temperatures, fan control)
-- Network diagnostics (WiFi, connectivity)
-- Mining statistics (shares, uptime, pool info)
+Generated CSV files contain timestamped records with:
+- Basic metrics (hashrate, temperature, power)
+- Extended data (voltages, frequencies, efficiency)
+- Mining stats (shares, uptime, pool info)
+- System health (WiFi, fan, status)
 
-### Integration Options
-- **Excel/Google Sheets**: Direct CSV import
-- **Grafana**: Custom data source integration
-- **InfluxDB**: Time series database import
-- **Custom scripts**: Python pandas integration
+### Integration
+- **Excel/Sheets**: Direct CSV import
+- **Grafana**: Custom data source
+- **Python**: pandas DataFrame compatible
+- **Custom apps**: Standard CSV format
+
+## 🔄 Upgrades
+
+### From Previous Versions
+```bash
+# Backup existing data
+python tools/csv_repair.py stats old_metrics.csv
+
+# Run new setup  
+python setup.py
+
+# Migrate configuration as needed
+# Old data files are automatically compatible
+```
 
 ## 🤝 Contributing
 
 We welcome contributions! Areas for improvement:
 - Additional miner model support
-- Enhanced visualization features
-- Database backend integration
-- Web dashboard interface
-- Mobile app development
-
-### Development Setup
-```bash
-# Clone repository
-git clone https://github.com/yourusername/bitaxe-monitor.git
-
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# or
-.venv\Scripts\activate     # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run tests (when available)
-python -m pytest
-```
+- Enhanced visualization features  
+- Database integration
+- Web interface development
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🙏 Support
 
-- **Bitaxe Community** for hardware innovation
-- **Python Community** for excellent libraries
-- **Contributors** who helped improve reliability
-- **Bitcoin Miners** worldwide for securing the network
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/bitaxe-monitor/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/bitaxe-monitor/discussions)
-- **Documentation**: See `docs/` folder for detailed guides
+- **Issues**: GitHub Issues for bug reports
+- **Documentation**: See `docs/` folder
+- **Examples**: Check `examples/` directory
 
 ---
 
-**Happy Mining!** ⛏️💎
-
-*Monitor your Bitaxe fleet with enterprise-grade reliability and professional-quality tools.*
+**Start monitoring: `python setup.py` → `python monitor.py` → `python viewer.py --live`**
