@@ -102,34 +102,28 @@ def get_latest_data_by_miner(data):
 def create_main_table(latest_data, show_detailed=False):
     """Create main miners table"""
     if show_detailed:
-        table = Table(title="Bitaxe Gamma Fleet - Detailed View", box=box.ROUNDED)
-        table.add_column("Miner IP", style="cyan", no_wrap=True)
-        table.add_column("Hostname", style="dim", no_wrap=True)
-        table.add_column("Status", justify="center")
-        table.add_column("Hashrate\n(GH/s)", justify="right")
-        table.add_column("Perf\n(%)", justify="right") 
-        table.add_column("ASIC T\n(C)", justify="right") 
-        table.add_column("VR T\n(C)", justify="right")
-        table.add_column("Power\n(W)", justify="right")
-        table.add_column("Set V\n(V)", justify="right")
-        table.add_column("Actual V\n(V)", justify="right")
-        table.add_column("Set Freq\n(MHz)", justify="right")
-        table.add_column("Efficiency\n(J/TH)", justify="right")
-        table.add_column("Uptime\n(hrs)", justify="right")
-        table.add_column("Memory\n(MB)", justify="right")
-        table.add_column("OC", justify="center")
+        # For detailed view, just show a simple summary table - details are in the panels above
+        table = Table(title="⚡ Fleet Summary", box=box.SIMPLE, border_style="blue")
+        table.add_column("Miner", style="cyan bold", width=15)
+        table.add_column("Status", justify="center", width=12)
+        table.add_column("Hashrate", justify="right", style="green", width=12)
+        table.add_column("Performance", justify="right", style="yellow", width=12) 
+        table.add_column("Temperature", justify="center", style="red", width=15)
+        table.add_column("Power", justify="right", style="blue", width=10)
+        table.add_column("Efficiency", justify="right", style="yellow", width=12)
     else:
-        table = Table(title="Bitaxe Gamma Fleet Summary", box=box.ROUNDED)
-        table.add_column("Miner IP", style="cyan", no_wrap=True)
-        table.add_column("Status", justify="center")
-        table.add_column("Hashrate\n(GH/s)", justify="right")
-        table.add_column("Perf\n(%)", justify="right")
-        table.add_column("ASIC T\n(C)", justify="right")
-        table.add_column("VR T\n(C)", justify="right")
-        table.add_column("Power\n(W)", justify="right")
-        table.add_column("Efficiency\n(J/TH)", justify="right")
-        table.add_column("Fan\n(%)", justify="right")
-        table.add_column("Uptime\n(hrs)", justify="right")
+        table = Table(title="⚡ Bitaxe Gamma Fleet Summary", box=box.ROUNDED, border_style="green")
+        table.add_column("IP Address", style="cyan bold", width=15, no_wrap=True)
+        table.add_column("Status", justify="center", width=10)
+        table.add_column("Hashrate\n(GH/s)", justify="right", style="green", width=10)
+        table.add_column("Perf\n(%)", justify="right", style="yellow", width=6)
+        table.add_column("ASIC T\n(°C)", justify="right", style="red", width=8)
+        table.add_column("VR T\n(°C)", justify="right", style="bright_red", width=8)
+        table.add_column("Power\n(W)", justify="right", style="blue", width=8)
+        table.add_column("Voltage\n(V)", justify="right", style="magenta", width=9)
+        table.add_column("Freq\n(MHz)", justify="right", style="cyan", width=8)
+        table.add_column("Efficiency\n(J/TH)", justify="right", style="yellow", width=11)
+        table.add_column("Uptime\n(hrs)", justify="right", style="dim", width=8)
     
     total_hashrate = 0
     total_power = 0
@@ -158,19 +152,28 @@ def create_main_table(latest_data, show_detailed=False):
         efficiency = f"{data.get('efficiency_j_th', 0):.1f}" if data.get('efficiency_j_th', 0) > 0 else "-"
         fan_speed = f"{data.get('fan_speed_percent', 0)}" if data.get('fan_speed_percent', 0) > 0 else "-"
         uptime_hrs = f"{data.get('uptime_hours', 0):.1f}" if data.get('uptime_hours', 0) > 0 else "-"
-        hostname = str(data.get('hostname', 'Unknown'))[:8] if data.get('hostname') else 'Unknown'  # Truncate for display
+        hostname = str(data.get('hostname', 'Unknown'))[:7] if data.get('hostname') else 'Unknown'  # Truncate for display
         free_heap_mb = f"{data.get('free_heap_bytes', 0) / 1024 / 1024:.1f}" if data.get('free_heap_bytes', 0) > 0 else "-"
         overclock = "Y" if data.get('overclock_enabled', 0) else "N"
+        current = f"{data.get('current_a', 0):.2f}" if data.get('current_a', 0) > 0 else "-"
+        wifi_rssi = f"{data.get('wifi_rssi', 0)}" if data.get('wifi_rssi', 0) != 0 else "-"
         
         if show_detailed:
+            miner_name = f"{miner_ip}\n({hostname})"
+            temp_combined = f"{temp_asic}°C / {temp_vr}°C"
+            hashrate_detailed = f"{hashrate} GH/s"
+            perf_detailed = f"{perf_ratio}%"
+            power_detailed = f"{power} W"
+            efficiency_detailed = f"{efficiency} J/TH"
+            
             table.add_row(
-                miner_ip, hostname, status_display, hashrate, perf_ratio, temp_asic, temp_vr, power,
-                voltage_set, voltage_actual, freq_set, efficiency, uptime_hrs, free_heap_mb, overclock
+                miner_name, status_display, hashrate_detailed, perf_detailed, 
+                temp_combined, power_detailed, efficiency_detailed
             )
         else:
             table.add_row(
                 miner_ip, status_display, hashrate, perf_ratio, temp_asic, temp_vr, power,
-                efficiency, fan_speed, uptime_hrs
+                voltage_actual, freq_set, efficiency, uptime_hrs
             )
     
     # Add summary row
@@ -180,39 +183,40 @@ def create_main_table(latest_data, show_detailed=False):
     table.add_section()
     if show_detailed:
         table.add_row(
-            f"[bold]TOTAL ({online_count}/{total_miners})[/bold]",
+            f"[bold]FLEET TOTAL[/bold]",
+            f"[green]{online_count}/{total_miners} online[/green]",
+            f"[bold]{total_hashrate:.1f} GH/s[/bold]",
             "-",
-            f"[green]{online_count} online[/green]",
-            f"[bold]{total_hashrate:.1f}[/bold]", "-", "-", "-",
-            f"[bold]{total_power:.1f}[/bold]", "-", "-", "-",
-            f"[bold]{avg_efficiency:.1f}[/bold]", "-", "-", "-"
+            "-",
+            f"[bold]{total_power:.1f} W[/bold]",
+            f"[bold]{avg_efficiency:.1f} J/TH[/bold]"
         )
     else:
         table.add_row(
             f"[bold]TOTAL ({online_count}/{total_miners})[/bold]",
             f"[green]{online_count} online[/green]",
             f"[bold]{total_hashrate:.1f}[/bold]", "-", "-", "-",
-            f"[bold]{total_power:.1f}[/bold]",
-            f"[bold]{avg_efficiency:.1f}[/bold]", "-", "-"
+            f"[bold]{total_power:.1f}[/bold]", "-", "-",
+            f"[bold]{avg_efficiency:.1f}[/bold]", "-"
         )
     
     return table
 
 def get_status_display(status):
-    """Get colored status display"""
+    """Get colored status display with Unicode icons"""
     status_map = {
-        'online': '[green]ONLINE[/green]',
-        'no_hashrate': '[yellow]NO HASH[/yellow]',
-        'overheating': '[red]HOT[/red]',
-        'wifi_issues': '[orange]WIFI[/orange]',
-        'high_rejection': '[red]REJECT[/red]',
-        'timeout': '[red]TIMEOUT[/red]',
-        'connection_failed': '[red]OFFLINE[/red]',
-        'high_power': '[yellow]HI PWR[/yellow]',
-        'low_power': '[yellow]LO PWR[/yellow]',
-        'no_temp_sensor': '[yellow]NO TEMP[/yellow]'
+        'online': '[green]🟢 ONLINE[/green]',
+        'no_hashrate': '[yellow]⚠️  NO HASH[/yellow]',
+        'overheating': '[red]🔥 HOT[/red]',
+        'wifi_issues': '[bright_magenta]📶 WIFI[/bright_magenta]',
+        'high_rejection': '[red]❌ REJECT[/red]',
+        'timeout': '[red]⏰ TIMEOUT[/red]',
+        'connection_failed': '[red]🔴 OFFLINE[/red]',
+        'high_power': '[yellow]⚡ HI PWR[/yellow]',
+        'low_power': '[yellow]🔋 LO PWR[/yellow]',
+        'no_temp_sensor': '[yellow]🌡️  NO TEMP[/yellow]'
     }
-    return status_map.get(status, f'[red]{status.upper()}[/red]')
+    return status_map.get(status, f'[red]❓ {status.upper()}[/red]')
 
 def create_fleet_stats_panel(latest_data):
     """Create fleet statistics panel"""
@@ -234,26 +238,45 @@ def create_fleet_stats_panel(latest_data):
         total_hashrate = total_power = avg_temp_asic = avg_temp_vr = avg_efficiency = 0
         total_shares = total_rejected = rejection_rate = 0
     
-    stats_text = f"""[bold green]Fleet Statistics[/bold green]
+    # Create visual indicators
+    online_percentage = (online_count / total_miners * 100) if total_miners > 0 else 0
+    online_bar = "█" * int(online_percentage // 10) + "░" * (10 - int(online_percentage // 10))
+    
+    # Fleet health indicators
+    fleet_health = "🟢 Excellent" if online_percentage >= 90 else "🟡 Good" if online_percentage >= 70 else "🔴 Poor"
+    
+    # Power efficiency rating
+    if avg_efficiency <= 20:
+        efficiency_rating = "🏆 Excellent"
+    elif avg_efficiency <= 25:
+        efficiency_rating = "🥈 Good"
+    elif avg_efficiency <= 30:
+        efficiency_rating = "🥉 Average"
+    else:
+        efficiency_rating = "⚠️ Poor"
+    
+    stats_text = f"""🏭 [bold blue]Fleet Overview[/bold blue]  {fleet_health}
 
-[cyan]Miners:[/cyan] {total_miners} total
-[green]Online:[/green] {online_count}
-[red]Offline:[/red] {offline_count}
+📊 [bold cyan]Fleet Status[/bold cyan]
+   Miners: [bold]{total_miners}[/bold] total  │  🟢 {online_count} online  │  🔴 {offline_count} offline
+   Health: {online_bar} {online_percentage:.0f}%
 
-[cyan]Performance:[/cyan]
-Total Hashrate: {total_hashrate:.1f} GH/s ({total_hashrate/1000:.2f} TH/s)
-Total Power: {total_power:.1f} W
-Average ASIC Temperature: {avg_temp_asic:.1f} C
-Average VR Temperature: {avg_temp_vr:.1f} C
-Fleet Efficiency: {avg_efficiency:.1f} J/TH
+⚡ [bold green]Performance Metrics[/bold green]
+   🔗 Total Hashrate: [bold green]{total_hashrate:.1f} GH/s[/bold green] [dim]({total_hashrate/1000:.2f} TH/s)[/dim]
+   ⚡ Total Power: [bold blue]{total_power:.1f} W[/bold blue]
+   📊 Fleet Efficiency: [bold yellow]{avg_efficiency:.1f} J/TH[/bold yellow] {efficiency_rating}
 
-[cyan]Mining Stats:[/cyan]
-Shares Accepted: {total_shares:,}
-Shares Rejected: {total_rejected:,}
-Rejection Rate: {rejection_rate:.2f}%
+🌡️ [bold red]Temperature Monitoring[/bold red]
+   🔥 Average ASIC: [red]{avg_temp_asic:.1f}°C[/red]
+   🌡️ Average VR: [bright_red]{avg_temp_vr:.1f}°C[/bright_red]
+
+💎 [bold yellow]Mining Statistics[/bold yellow]
+   ✅ Shares Accepted: [green]{total_shares:,}[/green]
+   ❌ Shares Rejected: [red]{total_rejected:,}[/red]
+   📈 Rejection Rate: [{'red' if rejection_rate > 5 else 'green'}]{rejection_rate:.2f}%[/{'red' if rejection_rate > 5 else 'green'}]
 """
     
-    return Panel(stats_text.strip(), title="Overview", border_style="blue")
+    return Panel(stats_text.strip(), title="🏭 Fleet Dashboard", border_style="bright_blue", padding=(0, 1))
 
 def create_individual_panels(latest_data):
     """Create individual miner panels for detailed view"""
@@ -263,35 +286,66 @@ def create_individual_panels(latest_data):
         status = data['status']
         
         if status == 'online':
-            panel_color = "green"
-            status_text = "[green]ONLINE[/green]"
+            panel_color = "bright_green"
+            status_text = "[green]🟢 ONLINE[/green]"
         elif status in ['timeout', 'connection_failed']:
-            panel_color = "red"
-            status_text = "[red]OFFLINE[/red]"
+            panel_color = "bright_red"
+            status_text = "[red]🔴 OFFLINE[/red]"
         else:
-            panel_color = "yellow"
-            status_text = f"[yellow]{status.upper()}[/yellow]"
+            panel_color = "bright_yellow"
+            status_text = get_status_display(status)
         
-        content = f"""Status: {status_text}
-Hashrate: {data.get('hashrate_ghs', 0):.1f} GH/s ({data.get('hashrate_ratio_percent', 0):.0f}% of expected)
-Expected: {data.get('expected_hashrate_ghs', 0):.1f} GH/s
-ASIC Temp: {data.get('temp_asic_c', 0):.1f}C
-VR Temp: {data.get('temp_vr_c', 0):.1f}C
-Power: {data.get('power_w', 0):.1f}W
-Efficiency: {data.get('efficiency_j_th', 0):.1f} J/TH
-Set Freq: {data.get('frequency_set_mhz', 0)} MHz
-Set Voltage: {data.get('voltage_asic_set_v', 0):.3f}V
-Actual Voltage: {data.get('voltage_asic_actual_v', 0):.3f}V
-Best Session: {data.get('best_session_diff', '0')}
-Memory Free: {data.get('free_heap_bytes', 0) / 1024 / 1024:.1f} MB
-Overclock: {'Enabled' if data.get('overclock_enabled', 0) else 'Disabled'}
-Uptime: {data.get('uptime_hours', 0):.1f} hrs"""
+        # Performance indicators
+        perf_ratio = data.get('hashrate_ratio_percent', 0)
+        perf_bar = "█" * int(perf_ratio // 10) + "░" * (10 - int(perf_ratio // 10))
+        
+        # Temperature warnings
+        asic_temp = data.get('temp_asic_c', 0)
+        vr_temp = data.get('temp_vr_c', 0)
+        temp_warning = " 🔥" if asic_temp > 80 or vr_temp > 80 else ""
+        
+        content = f"""📊 {status_text}
+
+🔗 [bold green]Mining Performance[/bold green]
+   Hashrate: [green]{data.get('hashrate_ghs', 0):.1f} GH/s[/green] ({perf_ratio:.0f}% of target)
+   Expected: [dim]{data.get('expected_hashrate_ghs', 0):.1f} GH/s[/dim]
+   Performance: {perf_bar} {perf_ratio:.0f}%
+
+🌡️ [bold red]Temperatures[/bold red]{temp_warning}
+   ASIC: [red]{asic_temp:.1f}°C[/red]  │  VR: [bright_red]{vr_temp:.1f}°C[/bright_red]
+
+⚡ [bold blue]Power & Voltage[/bold blue]
+   Power: [blue]{data.get('power_w', 0):.1f}W[/blue]  │  Current: [purple]{data.get('current_a', 0):.2f}A[/purple]
+   🔋 Set: [magenta]{data.get('voltage_asic_set_v', 0):.3f}V[/magenta]  │  Actual: [magenta]{data.get('voltage_asic_actual_v', 0):.3f}V[/magenta]
+   📱 Device: [dim]{data.get('voltage_device_v', 0):.3f}V[/dim]
+
+⚙️ [bold cyan]Configuration[/bold cyan]
+   Frequency: [cyan]{data.get('frequency_set_mhz', 0)} MHz[/cyan]
+   Efficiency: [yellow]{data.get('efficiency_j_th', 0):.1f} J/TH[/yellow]
+   Overclock: {'[green]🚀 Enabled[/green]' if data.get('overclock_enabled', 0) else '[dim]❌ Disabled[/dim]'}
+
+💎 [bold yellow]Mining Stats[/bold yellow]
+   ✅ Accepted: [green]{data.get('shares_accepted', 0):,}[/green]
+   ❌ Rejected: [red]{data.get('shares_rejected', 0):,}[/red]
+   🏆 Best Session: [bold]{data.get('best_session_diff', '0')}[/bold]
+
+🖥️ [bold dim]System Status[/bold dim]
+   🌪️ Fan: {data.get('fan_speed_percent', 0)}% ([dim]{data.get('fan_rpm', 0)} RPM[/dim])
+   💾 Memory: [cyan]{data.get('free_heap_bytes', 0) / 1024 / 1024:.1f} MB free[/cyan]
+   📶 WiFi: [green]{data.get('wifi_rssi', 0)} dBm[/green]
+   ⏰ Uptime: [dim]{data.get('uptime_hours', 0):.1f} hrs[/dim]"""
         
         if data.get('pool_user') and data.get('pool_user') != 'Unknown':
             pool_short = data['pool_user'][:15] + "..." if len(data['pool_user']) > 15 else data['pool_user']
-            content += f"\nPool: {pool_short}"
+            content += f"\n\n🏊 [bold cyan]Pool[/bold cyan]: [dim]{pool_short}[/dim]"
         
-        panels.append(Panel(content, title=f"[bold]{miner_ip} ({data.get('hostname', 'Unknown') or 'Unknown'})[/bold]", border_style=panel_color))
+        # Create title with hostname and IP
+        hostname = data.get('hostname', 'Unknown') or 'Unknown'
+        if hostname.endswith('*'):
+            hostname = f"({hostname})"
+        title = f"⛏️ [bold white]{hostname}[/bold white] [dim]│ {miner_ip}[/dim]"
+        
+        panels.append(Panel(content, title=title, border_style=panel_color, padding=(1, 1)))
     
     return panels
 
@@ -317,7 +371,7 @@ def show_summary(config, detailed=False):
     # Create layout
     layout = Layout()
     layout.split_column(
-        Layout(create_fleet_stats_panel(latest_data), size=12),
+        Layout(create_fleet_stats_panel(latest_data), size=8),
         Layout(create_main_table(latest_data, show_detailed=detailed))
     )
     
@@ -327,31 +381,41 @@ def show_live(config, detailed=False):
     """Show live updating view"""
     csv_path = config['csv_path']
     
-    def generate_display():
-        try:
-            data = load_csv_data(csv_path)
-            if not data:
-                return Panel("[yellow]No data available[/yellow]", title="Live Monitor")
-            
-            latest_data = get_latest_data_by_miner(data)
-            
-            layout = Layout()
-            layout.split_column(
-                Layout(create_fleet_stats_panel(latest_data), size=12),
-                Layout(create_main_table(latest_data, show_detailed=detailed))
-            )
-            return layout
-        except Exception as e:
-            return Panel(f"[red]Error: {e}[/red]", title="Live Monitor")
-    
-    console.print("[bold green]Starting live monitor...[/bold green]")
-    console.print("Press Ctrl+C to exit\n")
+    console.print("🚀 [bold green]Starting live monitor...[/bold green]")
+    console.print("📊 [dim]Press Ctrl+C to exit - Updates every 5 seconds[/dim]\n")
     
     try:
-        with Live(generate_display(), refresh_per_second=0.5) as live:
-            while True:
-                time.sleep(2)  # Update every 2 seconds
-                live.update(generate_display())
+        while True:
+            # Clear screen and show current data
+            console.clear()
+            
+            # Print header
+            console.print("\n[bold bright_cyan]⚡ Smart Bitaxe Gamma Monitor ⚡[/bold bright_cyan]")
+            console.print("[dim]Live Mode - Real-time Fleet Management[/dim]\n")
+            
+            try:
+                data = load_csv_data(csv_path)
+                if not data:
+                    console.print("[yellow]No data available[/yellow]")
+                else:
+                    latest_data = get_latest_data_by_miner(data)
+                    
+                    # Show fleet stats
+                    console.print(create_fleet_stats_panel(latest_data))
+                    console.print()
+                    
+                    # Show main table
+                    console.print(create_main_table(latest_data, show_detailed=detailed))
+                    
+            except Exception as e:
+                console.print(f"[red]Error: {e}[/red]")
+            
+            # Show update time
+            current_time = datetime.now().strftime("%H:%M:%S")
+            console.print(f"\n[dim]Last updated: {current_time} | Press Ctrl+C to exit[/dim]")
+            
+            time.sleep(5)  # Update every 5 seconds
+            
     except KeyboardInterrupt:
         console.print("\n[yellow]Live monitor stopped[/yellow]")
 
@@ -377,7 +441,8 @@ def main():
     # Load configuration
     config = load_config()
     
-    console.print("[bold blue]Smart Bitaxe Gamma Monitor - Enhanced CLI Viewer[/bold blue]")
+    console.print("\n[bold bright_cyan]⚡ Smart Bitaxe Gamma Monitor ⚡[/bold bright_cyan]")
+    console.print("[dim]Enhanced CLI Viewer with Real-time Fleet Management[/dim]\n")
     
     if args.summary:
         show_summary(config, detailed=args.detailed)

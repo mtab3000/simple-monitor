@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  bitaxe-monitor:
+    build: .
+    container_name: bitaxe-monitor
+    restart: unless-stopped
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/app/data
+      - ./backups:/app/backups
+      - ./metrics.csv:/app/metrics.csv
+      - ./hostname_cache.json:/app/hostname_cache.json
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONIOENCODING=utf-8
+      - LANG=en_US.UTF-8
+      - LC_ALL=en_US.UTF-8
+    networks:
+      - bitaxe-network
+    # Uncomment if you need to access the network interface directly
+    # network_mode: host
+    
+  # Optional: Web dashboard (if you want to add one later)
+  # bitaxe-web:
+  #   build: 
+  #     context: .
+  #     dockerfile: Dockerfile.web
+  #   container_name: bitaxe-web
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./data:/app/data:ro
+  #   depends_on:
+  #     - bitaxe-monitor
+  #   networks:
+  #     - bitaxe-network
+
+networks:
+  bitaxe-network:
+    driver: bridge
+
+volumes:
+  bitaxe-data:
+  bitaxe-backups:

@@ -1,269 +1,404 @@
-# 🚀 Bitaxe Monitor
+# ⚡ Bitaxe Gamma Monitor
 
-A professional monitoring solution for Bitaxe Bitcoin miners featuring real-time data collection, robust error handling, and comprehensive visualization tools.
+A beautiful, real-time monitoring solution for Bitaxe Gamma mining devices with professional-grade visualization and comprehensive fleet management.
 
-## ✨ Key Features
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
+![Tests](https://img.shields.io/badge/tests-pytest-green.svg)
+![Code Quality](https://img.shields.io/badge/code%20quality-pylint-yellow.svg)
+![Security](https://img.shields.io/badge/security-CodeQL-purple.svg)
 
-### 🔌 **Real API Integration**
-- Direct connection to Bitaxe miners via REST API
-- Comprehensive metrics collection (32+ data points per miner)
-- Smart status detection and health monitoring
-- Automatic retry logic with configurable timeouts
+## ✨ Features
 
-### 🛡️ **Robust & Reliable**
-- **CSV corruption prevention** with atomic writes
-- **Persistent hostname caching** for flaky network responses
-- **Automatic backups** and data validation
-- **Thread-safe operations** and error recovery
-- **Self-healing system** that recovers from errors
+### 🎯 **Real-time Monitoring**
+- **Live dashboard** with auto-refresh every 5 seconds
+- **Fleet overview** with health indicators and progress bars
+- **Individual miner panels** with detailed metrics
+- **Temperature monitoring** with overheating warnings
+- **Performance tracking** with visual progress indicators
 
-### 📊 **Professional Monitoring**
-- **Real-time dashboard** with live updates
-- **Fleet-wide statistics** and performance metrics
-- **Mining efficiency calculations** (J/TH)
-- **Temperature monitoring** (ASIC + VR)
-- **Network diagnostics** and connectivity status
+### ⚡ **Comprehensive Metrics**
+- **Hashrate performance** with percentage of expected
+- **Power consumption** and efficiency (J/TH) ratings
+- **Voltage monitoring** (set, actual, device voltages)
+- **Frequency settings** and overclock status
+- **Temperature readings** (ASIC and VR temperatures)
+- **Network connectivity** (WiFi signal strength)
+- **System status** (fan speed, memory, uptime)
+- **Mining statistics** (shares accepted/rejected, rejection rate)
+
+### 🎨 **Beautiful Interface**
+- **Unicode icons** and color-coded status indicators
+- **Progress bars** for visual performance assessment
+- **Professional tables** with proper alignment
+- **Fleet health ratings** with emoji indicators
+- **Real-time timestamps** and graceful error handling
+
+### 🏗️ **Enterprise Ready**
+- **Docker containerization** with docker-compose orchestration
+- **Comprehensive test suite** with 80%+ code coverage
+- **CI/CD pipeline** with automated code quality checks
+- **Security analysis** with CodeQL integration
+- **Persistent data storage** with automatic backups
+- **Robust error handling** and connection retry logic
+- **Hostname caching** for network resilience
+- **CSV data export** for historical analysis
 
 ## 🚀 Quick Start
 
-### 1. **Installation**
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/bitaxe-monitor.git
-cd bitaxe-monitor
+### Using Docker (Recommended)
 
-# Install dependencies
-pip install -r requirements.txt
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/mtab3000/simple-monitor.git
+   cd simple-monitor
+   ```
 
-### 2. **Setup Configuration**
-```bash
-# Run setup to create config.yaml
-python setup.py
-```
-This creates `config.yaml` in the project root. Edit it with your miner IP addresses:
+2. **Create your configuration:**
+   ```bash
+   cp examples/config.example.yaml config.yaml
+   # Edit config.yaml with your Bitaxe IP addresses
+   ```
+
+3. **Start with Docker Compose:**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **View the monitoring dashboard:**
+   ```bash
+   docker-compose exec bitaxe-monitor python viewer.py --live
+   ```
+
+### Manual Installation
+
+1. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Configure your miners:**
+   ```bash
+   cp examples/config.example.yaml config.yaml
+   # Edit config.yaml with your settings
+   ```
+
+3. **Start monitoring:**
+   ```bash
+   python monitor.py
+   ```
+
+4. **View the dashboard:**
+   ```bash
+   python viewer.py --live
+   ```
+
+## 📖 Usage
+
+### Configuration
+
+Edit `config.yaml` with your Bitaxe device settings:
 
 ```yaml
-miners:
-  - 192.168.1.45
-  - 192.168.1.46
-  - 192.168.1.47
+# Polling configuration
+poll_interval: 30           # Seconds between polling cycles
+csv_path: metrics.csv       # Data output file
+timeout: 10                 # HTTP request timeout
+retries: 3                  # Retry attempts
+retry_delay: 1              # Delay between retries
 
-poll_interval: 30
-csv_path: metrics.csv
-timeout: 10
+# Miner configuration
+miners:
+  - ip: '192.168.1.45'
+    expected_hashrate_ghs: 934.3
+  - ip: '192.168.1.46'
+    expected_hashrate_ghs: 944.5
 ```
 
-### 3. **Start Monitoring**
+### Viewing Options
+
+**Live Dashboard (Recommended):**
 ```bash
-# Start data collection
-python monitor.py
-
-# View live dashboard (in another terminal)
 python viewer.py --live
+```
 
-# View summary
+**Detailed View with Individual Panels:**
+```bash
+python viewer.py --live --detailed
+```
+
+**Static Summary:**
+```bash
 python viewer.py --summary
 ```
 
-## 📁 Project Structure
-
-```
-bitaxe-monitor/
-├── monitor.py          # Main launcher - start data collection
-├── viewer.py           # Data viewer - live dashboard and summaries
-├── setup.py            # Setup tool - creates config.yaml
-├── config.yaml         # Your configuration (created by setup.py)
-├── metrics.csv         # Data output (created when monitoring starts)
-├── hostname_cache.json # Hostname cache (created automatically)
-├── src/                # Source code
-│   ├── collector.py    # Data collector engine
-│   └── cli_view.py     # CLI viewer/dashboard
-├── tools/              # Utilities and maintenance
-│   ├── csv_repair.py   # CSV repair and recovery tools
-│   └── setup_improvements.py # Migration utilities
-├── examples/           # Example configurations and templates
-├── docs/               # Documentation
-├── data/               # Sample data files
-└── backups/            # Automatic backups (created at runtime)
-```
-
-## 📊 Collected Metrics
-
-### Core Performance Data
-- **Hashrate**: Current performance (GH/s, TH/s)
-- **Temperature**: ASIC and voltage regulator temperatures
-- **Power**: Real-time consumption (Watts)
-- **Efficiency**: Performance per watt (J/TH)
-- **Voltage**: Input and core voltages
-
-### Mining Statistics
-- **Shares**: Accepted and rejected share counts
-- **Uptime**: Operating time tracking
-- **Pool Info**: Connected pool details
-- **Best Difficulty**: Highest difficulty achieved
-
-### System Health
-- **WiFi Signal**: RSSI strength monitoring
-- **Fan Control**: Speed and RPM tracking
-- **Status**: Comprehensive health assessment
-- **Network**: Connectivity diagnostics
-
-## 🔍 Status Indicators
-
-The monitor provides intelligent status detection:
-
-- **🟢 ONLINE**: Normal operation
-- **🟡 NO HASH**: Zero hashrate detected  
-- **🔴 HOT**: Overheating (>85°C)
-- **🟠 WIFI**: WiFi connectivity issues
-- **🔴 REJECT**: High share rejection rate (>10%)
-- **🔴 TIMEOUT**: API request timeout
-- **🔴 OFFLINE**: Connection failed
-
-## 🖥️ Dashboard Features
-
-### Live Dashboard (`python viewer.py --live`)
-- Real-time updates every 2 seconds
-- Color-coded status indicators  
-- Fleet performance summary
-- Individual miner details
-
-### Summary View (`python viewer.py --summary`)
-- Quick overview of all miners
-- Latest metrics and status
-- Performance statistics
-- Fleet totals and averages
-
-### Detailed Mode (`python viewer.py --summary --detailed`)
-- Extended metrics display
-- Additional diagnostic information
-- Advanced performance indicators
-
-## 🔧 Advanced Tools
-
-### CSV Repair Utility
+**Static Detailed Summary:**
 ```bash
-# Analyze file for corruption
-python tools/csv_repair.py analyze metrics.csv
-
-# Repair corrupted data
-python tools/csv_repair.py repair corrupted_file.csv
-
-# Get detailed statistics  
-python tools/csv_repair.py stats metrics.csv
-
-# Merge multiple files
-python tools/csv_repair.py merge output.csv file1.csv file2.csv
+python viewer.py --summary --detailed
 ```
 
-### Backup Management
-- **Automatic backups** every 100 collection cycles
-- **Backup rotation** (keeps last 10 files)
-- **Manual backup tools** for data preservation
-- **Recovery procedures** for data loss scenarios
+### Docker Commands
 
-## ⚙️ Configuration
-
-The `config.yaml` file (created by `python setup.py`) contains:
-
-```yaml
-# Miner IP addresses to monitor
-miners:
-  - 192.168.1.45
-  - 192.168.1.46
-
-# Polling settings
-poll_interval: 30          # Seconds between polls
-timeout: 10                # HTTP timeout
-retries: 3                 # Number of retries
-
-# File settings  
-csv_path: metrics.csv      # Output file
-backup_frequency: 100      # Backup every N cycles
-validate_csv: true         # Enable validation
-
-# Optional: Display names
-aliases:
-  - "Miner-01"
-  - "Miner-02"
+**Start monitoring in background:**
+```bash
+docker-compose up -d
 ```
+
+**View live dashboard:**
+```bash
+docker-compose exec bitaxe-monitor python viewer.py --live
+```
+
+**Check logs:**
+```bash
+docker-compose logs -f bitaxe-monitor
+```
+
+**Stop monitoring:**
+```bash
+docker-compose down
+```
+
+## 📊 Dashboard Features
+
+### Fleet Dashboard
+- **Health Overview:** Visual fleet status with progress bars
+- **Performance Metrics:** Total hashrate, power consumption, efficiency ratings
+- **Temperature Monitoring:** Average ASIC and VR temperatures
+- **Mining Statistics:** Shares accepted/rejected, rejection rates
+
+### Individual Miner Panels
+- **Performance Bars:** Visual hashrate percentage indicators
+- **Comprehensive Metrics:** All voltage readings, frequency settings, power consumption
+- **System Status:** Fan speed, memory usage, WiFi signal, uptime
+- **Mining Stats:** Share statistics and best session difficulty
+
+### Status Indicators
+- 🟢 **Online:** Miner operating normally
+- ⚠️ **No Hash:** Hashrate issues detected
+- 🔥 **Overheating:** Temperature warnings
+- 📶 **WiFi Issues:** Network connectivity problems
+- ❌ **Rejected Shares:** High rejection rate alerts
+- ⏰ **Timeout:** Connection timeouts
+- 🔴 **Offline:** Miner unreachable
+
+## 🔧 Advanced Configuration
+
+### Environment Variables
+```bash
+# Set UTF-8 encoding (handled automatically in Docker)
+export PYTHONIOENCODING=utf-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+```
+
+### Data Storage
+- **CSV Data:** Stored in `metrics.csv` for historical analysis
+- **Backups:** Automatic backups in `backups/` directory
+- **Cache:** Hostname cache in `hostname_cache.json`
+- **Persistence:** All data persisted between Docker restarts
+
+### Customization
+- Modify `poll_interval` for different update frequencies
+- Adjust `expected_hashrate_ghs` for accurate performance monitoring
+- Configure `timeout` and `retries` for network reliability
+
+## 🛠️ Development
+
+### Local Development Setup
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run setup script
+python setup.py
+
+# Run monitoring
+python monitor.py
+
+# View dashboard
+python viewer.py --live
+```
+
+### Testing & Code Quality
+
+**Run the complete test suite:**
+```bash
+# Run all tests with coverage
+pytest
+
+# Run specific test categories
+pytest -m unit          # Unit tests only
+pytest -m integration   # Integration tests only
+
+# Generate HTML coverage report
+pytest --cov-report=html
+```
+
+**Code quality checks:**
+```bash
+# Run pylint code analysis
+pylint src/
+
+# Check for security issues (requires CodeQL CLI)
+codeql database analyze
+```
+
+**Continuous Integration:**
+- **Pylint:** Automated code quality checks on push/PR
+- **CodeQL:** Security analysis runs weekly and on push
+- **Test Coverage:** Minimum 80% coverage enforced
+
+### File Structure
+```
+simple-monitor/
+├── .github/
+│   └── workflows/        # CI/CD workflows
+│       ├── pylint.yml   # Code quality checks
+│       └── codeql.yml   # Security analysis
+├── src/
+│   ├── collector.py      # Data collection and CSV handling
+│   └── cli_view.py       # Dashboard and visualization
+├── tests/
+│   ├── __init__.py      # Test package initialization
+│   ├── test_collector.py # Unit tests for collector
+│   └── test_cli_view.py # Unit tests for CLI viewer
+├── examples/
+│   └── config.example.yaml # Example configuration
+├── data/                 # Runtime data directory
+├── backups/             # Automatic backups
+├── .gitignore          # Git ignore rules
+├── .gitattributes      # Git attributes
+├── .pylintrc          # Pylint configuration
+├── pytest.ini        # Pytest configuration
+├── docker-compose.yml # Docker orchestration
+├── Dockerfile        # Container definition
+├── requirements.txt  # Python dependencies
+├── LICENSE          # MIT license
+├── README.md       # This documentation
+├── monitor.py     # Main monitoring script
+├── viewer.py     # Dashboard launcher
+└── setup.py     # Installation and setup
+```
+
+## 📋 Requirements
+
+### System Requirements
+- **Python 3.8+**
+- **Network access** to Bitaxe devices
+- **UTF-8 terminal support** for Unicode display
+
+### Python Dependencies
+
+**Production:**
+- `requests>=2.28.0` - HTTP client for API calls
+- `PyYAML>=6.0` - Configuration file parsing
+- `rich>=12.0.0` - Beautiful terminal interface
+- `urllib3>=1.26.0` - HTTP library
+
+**Development & Testing:**
+- `pytest>=7.0.0` - Testing framework
+- `pytest-cov>=4.0.0` - Code coverage reporting
+- `pylint>=2.15.0` - Code quality analyzer
+
+### Hardware Requirements
+- **RAM:** 100MB+ for data storage and processing
+- **Storage:** 10MB+ for CSV data and backups
+- **Network:** LAN access to Bitaxe devices
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-**❌ "Connection failed" errors**
-- Check miner IP addresses in `config.yaml`
-- Verify miners are powered on and connected to WiFi
-- Test connectivity: `ping 192.168.1.45`
-
-**❌ "config.yaml not found"**
-- Run `python setup.py` to create configuration file
-- Edit the created `config.yaml` with your miner IPs
-
-**❌ "No data in viewer"**
-- Start data collection first: `python monitor.py`
-- Let it run for a few cycles to generate data
-- Check if `metrics.csv` exists and has data
-
-**❌ CSV corruption detected**
-- Use repair tools: `python tools/csv_repair.py analyze metrics.csv`
-- Automatic backups available in `backups/` directory
-
-### Network Requirements
-- Miners and monitoring computer on same network
-- Port 80 (HTTP) access to miners  
-- Stable WiFi connection for miners
-- Python 3.7+ with required packages
-
-## 📈 Data Export
-
-### CSV Format
-Generated CSV files contain timestamped records with:
-- Basic metrics (hashrate, temperature, power)
-- Extended data (voltages, frequencies, efficiency)
-- Mining stats (shares, uptime, pool info)
-- System health (WiFi, fan, status)
-
-### Integration
-- **Excel/Sheets**: Direct CSV import
-- **Grafana**: Custom data source
-- **Python**: pandas DataFrame compatible
-- **Custom apps**: Standard CSV format
-
-## 🔄 Upgrades
-
-### From Previous Versions
+**Unicode Display Problems:**
 ```bash
-# Backup existing data
-python tools/csv_repair.py stats old_metrics.csv
-
-# Run new setup  
-python setup.py
-
-# Migrate configuration as needed
-# Old data files are automatically compatible
+# Set environment variables
+export PYTHONIOENCODING=utf-8
+export LANG=en_US.UTF-8
 ```
+
+**Connection Timeouts:**
+- Check network connectivity to Bitaxe devices
+- Increase `timeout` value in config.yaml
+- Verify IP addresses are correct
+
+**Docker Permission Issues:**
+```bash
+# Fix permissions
+sudo chown -R $USER:$USER data/ backups/
+```
+
+**CSV Corruption:**
+- Check `backups/` directory for recent backups
+- Automatic corruption detection and repair included
+
+### Logging
+- Monitor Docker logs: `docker-compose logs -f`
+- Check for network issues in console output
+- Automatic retry logic handles temporary failures
+
+## 🔍 Quality Assurance
+
+### Automated Testing
+- **Comprehensive test suite** with unit and integration tests
+- **Code coverage** tracking with minimum 80% requirement
+- **Continuous testing** on multiple Python versions (3.8-3.11)
+- **Test categories:** Unit tests, integration tests, edge case testing
+
+### Code Quality
+- **Pylint integration** with custom configuration
+- **Automatic formatting** standards enforcement
+- **Import optimization** and code organization
+- **Docstring requirements** for all public functions
+
+### Security & Compliance
+- **CodeQL analysis** for vulnerability detection
+- **Dependency scanning** for known security issues
+- **Automated security updates** via GitHub workflows
+- **MIT license** compliance and attribution
+
+### CI/CD Pipeline
+- **GitHub Actions** workflows for automation
+- **Multi-platform testing** (Ubuntu, Windows, macOS compatible)
+- **Automated code review** with quality gates
+- **Release automation** with proper versioning
 
 ## 🤝 Contributing
 
-We welcome contributions! Areas for improvement:
-- Additional miner model support
-- Enhanced visualization features  
-- Database integration
-- Web interface development
+1. **Fork the repository** and clone your fork
+2. **Create a feature branch:** `git checkout -b feature-name`
+3. **Install development dependencies:** `pip install -r requirements.txt`
+4. **Make your changes** following the existing code style
+5. **Write tests** for new functionality (maintain 80%+ coverage)
+6. **Run the test suite:** `pytest` (ensure all tests pass)
+7. **Check code quality:** `pylint src/` (address any issues)
+8. **Commit with descriptive messages** using conventional commit format
+9. **Push to your fork** and submit a pull request
+
+### Development Guidelines
+- Follow Python PEP 8 style guidelines
+- Write comprehensive docstrings for all functions
+- Add unit tests for new features and bug fixes
+- Ensure backward compatibility when possible
+- Update documentation for user-facing changes
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Support
+## 🙏 Acknowledgments
 
-- **Issues**: GitHub Issues for bug reports
-- **Documentation**: See `docs/` folder
-- **Examples**: Check `examples/` directory
+- **Bitaxe Community** for the amazing open-source mining hardware
+- **Rich Library** for beautiful terminal interfaces
+- **Python Community** for excellent tooling and libraries
 
 ---
 
-**Start monitoring: `python setup.py` → `python monitor.py` → `python viewer.py --live`**
+⚡ **Happy Mining!** ⚡
+
+For support and updates, visit the [GitHub repository](https://github.com/mtab3000/simple-monitor).

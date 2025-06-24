@@ -22,32 +22,13 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Virtual Environment
-.venv/
-venv/
-ENV/
+# Virtual environments
 env/
-
-# Data Files
-*.csv
-*.log
-*.db
-*.sqlite3
-
-# Configuration (local configs should not be committed)
-config.yaml
-config.yml
-config.json
-
-# Cache and temp files
-hostname_cache.json
-*.tmp
-*.temp
-
-# Backups
-backups/
-*.backup
-*.bak
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
 
 # IDE
 .vscode/
@@ -58,17 +39,53 @@ backups/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# Coverage reports
-htmlcov/
+# Data files (generated at runtime)
+metrics.csv
+hostname_cache.json
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# Log files
+*.log
+logs/
+
+# Configuration files with sensitive data
+config.yaml
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+
+# Examples (keep in repo for reference)
+!examples/
+
+# Keep data directory structure but ignore contents
+data/*
+!data/.gitkeep
+
+# Docker
+.dockerignore
+
+# Testing
 .coverage
 .coverage.*
 coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+htmlcov/
 
 # Local development
 local/

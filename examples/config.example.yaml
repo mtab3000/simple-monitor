@@ -1,0 +1,25 @@
+# Bitaxe Gamma Monitor Configuration Example
+# Copy this file to config.yaml and customize for your setup
+
+# Polling configuration
+poll_interval: 30           # Seconds between polling cycles
+csv_path: metrics.csv       # Data output file
+timeout: 10                 # HTTP request timeout in seconds
+retries: 3                  # Number of retry attempts
+retry_delay: 1              # Seconds between retries
+
+# Miner configuration
+miners:
+  - ip: '192.168.1.45'      # Replace with your Bitaxe device IP addresses
+    expected_hashrate_ghs: 934.3  # Expected hashrate in GH/s for monitoring
+  
+  - ip: '192.168.1.46'
+    expected_hashrate_ghs: 944.5
+  
+  - ip: '192.168.1.47'
+    expected_hashrate_ghs: 922.1
+
+# Add more miners as needed by copying the structure above
+# Example:
+# - ip: '192.168.1.48'
+#   expected_hashrate_ghs: 950.0
