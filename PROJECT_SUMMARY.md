@@ -64,14 +64,14 @@ bitaxe-monitor/
 
 ### **Create GitHub Repository**
 1. Go to [GitHub.com](https://github.com) and create a new repository
-2. Name it: `bitaxe-monitor` or `simple-miner` 
+2. Name it: `simple-miner` 
 3. Make it public or private as desired
 4. Don't initialize with README (we have our own)
 
 ### **Connect Local Repository to GitHub**
 ```bash
 # Add GitHub remote (replace with your actual repository URL)
-git -C C:\dev\simple-monitor remote add origin https://github.com/yourusername/bitaxe-monitor.git
+git -C C:\dev\simple-monitor remote add origin https://github.com/mtab3000/simple-monitor.git
 
 # Push to GitHub
 git -C C:\dev\simple-monitor branch -M main
@@ -81,7 +81,7 @@ git -C C:\dev\simple-monitor push -u origin main
 ### **Alternative: Using GitHub CLI**
 ```bash
 # If you have GitHub CLI installed
-gh repo create bitaxe-monitor --public --source=. --remote=origin --push
+gh repo create simple-monitor --public --source=. --remote=origin --push
 ```
 
 ## 📊 **Project Status**
