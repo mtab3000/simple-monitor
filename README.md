@@ -29,7 +29,8 @@ A beautiful, real-time monitoring solution for Bitaxe Gamma mining devices with 
 - **Mining statistics** (shares accepted/rejected, rejection rate)
 
 ### 🎨 **Beautiful Interface**
-- **Unicode icons** and color-coded status indicators
+- **Web dashboard** with responsive design and real-time updates
+- **Terminal interface** with Unicode icons and color-coded status indicators
 - **Progress bars** for visual performance assessment
 - **Professional tables** with proper alignment
 - **Fleet health ratings** with emoji indicators
@@ -91,7 +92,11 @@ A beautiful, real-time monitoring solution for Bitaxe Gamma mining devices with 
 
 4. **View the dashboard:**
    ```bash
+   # Terminal interface
    python viewer.py --live
+   
+   # Web interface (recommended)
+   python web_dashboard.py
    ```
 
 ## 📖 Usage
@@ -137,6 +142,26 @@ python viewer.py --summary
 ```bash
 python viewer.py --summary --detailed
 ```
+
+### Web Dashboard
+
+**Start the web interface:**
+```bash
+python web_dashboard.py
+```
+
+**Custom host/port:**
+```bash
+python web_dashboard.py --host 0.0.0.0 --port 8080
+```
+
+**Web Features:**
+- **Responsive design** works on desktop, tablet, and mobile
+- **Real-time updates** every 5 seconds
+- **Fleet overview** with total statistics
+- **Individual miner cards** with detailed metrics
+- **Auto-refresh toggle** for manual control
+- **REST API endpoints** for integration
 
 ### Docker Commands
 
@@ -263,7 +288,14 @@ simple-monitor/
 │       └── codeql.yml   # Security analysis
 ├── src/
 │   ├── collector.py      # Data collection and CSV handling
-│   └── cli_view.py       # Dashboard and visualization
+│   ├── cli_view.py       # Dashboard and visualization
+│   └── web_server.py     # Web server and API endpoints
+├── web/
+│   ├── templates/        # HTML templates
+│   │   └── dashboard.html
+│   └── static/          # CSS and JavaScript
+│       ├── css/dashboard.css
+│       └── js/dashboard.js
 ├── tests/
 │   ├── __init__.py      # Test package initialization
 │   ├── test_collector.py # Unit tests for collector
@@ -282,7 +314,8 @@ simple-monitor/
 ├── LICENSE          # MIT license
 ├── README.md       # This documentation
 ├── monitor.py     # Main monitoring script
-├── viewer.py     # Dashboard launcher
+├── viewer.py     # Terminal dashboard launcher
+├── web_dashboard.py # Web dashboard launcher
 └── setup.py     # Installation and setup
 ```
 
@@ -300,6 +333,7 @@ simple-monitor/
 - `PyYAML>=6.0` - Configuration file parsing
 - `rich>=12.0.0` - Beautiful terminal interface
 - `urllib3>=1.26.0` - HTTP library
+- `Flask>=2.3.0` - Web interface framework
 
 **Development & Testing:**
 - `pytest>=7.0.0` - Testing framework
