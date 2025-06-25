@@ -299,7 +299,8 @@ simple-monitor/
 ├── tests/
 │   ├── __init__.py      # Test package initialization
 │   ├── test_collector.py # Unit tests for collector
-│   └── test_cli_view.py # Unit tests for CLI viewer
+│   ├── test_cli_view.py # Unit tests for CLI viewer
+│   └── test_web_server.py # Unit tests for web server module
 ├── examples/
 │   └── config.example.yaml # Example configuration
 ├── data/                 # Runtime data directory
