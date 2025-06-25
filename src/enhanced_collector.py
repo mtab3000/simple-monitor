@@ -53,13 +53,89 @@ class EnhancedBitaxeCollector:
             'miners_total': len(self.config.get('miners', []))
         }
         
+        # Resilience and reliability settings
+        self.max_consecutive_failures = 10
+        self.failure_count = 0
+        self.last_successful_collection = time.time()
+        self.backoff_multiplier = 1.0
+        self.max_backoff = 300  # 5 minutes max backoff
+        self.circuit_breaker_open = False
+        self.circuit_breaker_reset_time = 0
+        
         # Background task timers
         self.last_analytics_run = 0
         self.last_maintenance_run = 0
         self.analytics_interval = self.config.get('analytics_interval', 1800)  # 30 minutes
         self.maintenance_interval = self.config.get('maintenance_interval', 43200)  # 12 hours
         
+        # Validate initial setup
+        self.validate_setup()
+        
         self.logger.info("Enhanced collector initialized - Database-only mode")
+    
+    def validate_setup(self):
+        """Validate initial setup and configuration."""
+        try:
+            # Validate configuration
+            miners = self.config.get('miners', [])
+            if not miners:
+                raise ValueError("No miners configured in config.yaml")
+            
+            # Validate database connection
+            with self.db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+            
+            # Run data quality check
+            quality_report = self.db.validate_data_quality()
+            if not quality_report['valid']:
+                self.logger.warning(f"Data quality issues found: {quality_report['issues']}")
+            
+            self.logger.info(f"Setup validation passed - {len(miners)} miners configured")
+            
+        except Exception as e:
+            self.logger.error(f"Setup validation failed: {e}")
+            raise
+    
+    def handle_collection_failure(self, error_message: str):
+        """Handle collection failures with exponential backoff and circuit breaker."""
+        self.failure_count += 1
+        self.collection_stats['failed_collections'] += 1
+        
+        self.logger.error(f"Collection failure #{self.failure_count}: {error_message}")
+        
+        # Implement exponential backoff
+        if self.failure_count >= 3:
+            self.backoff_multiplier = min(self.backoff_multiplier * 2, self.max_backoff / self.config.get('poll_interval', 30))
+            self.logger.warning(f"Implementing backoff: {self.backoff_multiplier}x normal interval")
+        
+        # Circuit breaker - stop collecting if too many failures
+        if self.failure_count >= self.max_consecutive_failures:
+            self.circuit_breaker_open = True
+            self.circuit_breaker_reset_time = time.time() + 300  # 5 minutes
+            self.logger.critical(f"Circuit breaker activated - too many failures ({self.failure_count})")
+    
+    def handle_collection_success(self):
+        """Handle successful collection - reset failure counters."""
+        if self.failure_count > 0:
+            self.logger.info(f"Collection recovered after {self.failure_count} failures")
+        
+        self.failure_count = 0
+        self.backoff_multiplier = 1.0
+        self.last_successful_collection = time.time()
+        self.circuit_breaker_open = False
+        self.collection_stats['successful_collections'] += 1
+    
+    def check_circuit_breaker(self) -> bool:
+        """Check if circuit breaker should be reset."""
+        if self.circuit_breaker_open:
+            if time.time() > self.circuit_breaker_reset_time:
+                self.circuit_breaker_open = False
+                self.failure_count = 0
+                self.logger.info("Circuit breaker reset - resuming collection")
+                return True
+            return False
+        return True
     
     def load_config(self) -> Dict:
         """Load configuration from YAML file."""
@@ -199,9 +275,14 @@ class EnhancedBitaxeCollector:
             }
     
     def collect_once(self):
-        """Single collection cycle - database only."""
+        """Single collection cycle - database only with resilience."""
         collection_start = time.time()
         self.collection_stats['total_collections'] += 1
+        
+        # Check circuit breaker
+        if not self.check_circuit_breaker():
+            self.logger.warning("Circuit breaker open - skipping collection")
+            return
         
         try:
             self.logger.info("Starting collection cycle")
@@ -238,18 +319,22 @@ class EnhancedBitaxeCollector:
                     self.logger.info(f"✓ Collection complete: {online_count}/{len(self.config['miners'])} online, "
                                    f"{collection_time:.2f}s, {len(all_metrics)} records stored")
                     
+                    # Handle successful collection
+                    self.handle_collection_success()
+                    
                 except Exception as e:
-                    self.logger.error(f"Database storage failed: {e}")
-                    self.collection_stats['failed_collections'] += 1
+                    error_msg = f"Database storage failed: {e}"
+                    self.handle_collection_failure(error_msg)
                     import traceback
                     traceback.print_exc()
+                    return
             
             # Background tasks
             self._run_background_tasks()
             
         except Exception as e:
-            self.logger.error(f"Collection cycle failed: {e}")
-            self.collection_stats['failed_collections'] += 1
+            error_msg = f"Collection cycle failed: {e}"
+            self.handle_collection_failure(error_msg)
     
     def _run_background_tasks(self):
         """Run analytics and maintenance tasks."""
@@ -294,13 +379,21 @@ class EnhancedBitaxeCollector:
                 self.collect_once()
                 
                 if self.running:  # Check if still running after collection
-                    time.sleep(self.config.get('poll_interval', 30))
+                    # Use adaptive sleep interval based on backoff multiplier
+                    base_interval = self.config.get('poll_interval', 30)
+                    sleep_interval = base_interval * self.backoff_multiplier
+                    
+                    if self.backoff_multiplier > 1:
+                        self.logger.info(f"Using backoff interval: {sleep_interval:.1f}s")
+                    
+                    time.sleep(sleep_interval)
                     
             except KeyboardInterrupt:
                 self.logger.info("Received interrupt signal")
                 break
             except Exception as e:
                 self.logger.error(f"Unexpected error: {e}")
+                self.handle_collection_failure(f"Main loop error: {e}")
                 time.sleep(10)  # Wait before retry
         
         self.logger.info("Enhanced collector stopped")

@@ -13,7 +13,7 @@ from typing import Dict, List, Optional
 from flask import Flask, render_template, jsonify, request
 import yaml
 
-from .cli_view import load_csv_data, get_latest_data_by_miner
+# CSV support removed - database-only operation
 from .database import BitaxeDatabase
 
 
@@ -45,7 +45,6 @@ class BitaxeWebServer:
             if not config_file.exists():
                 print(f"Warning: Config file {self.config_path} not found, using defaults")
                 return {
-                    'csv_path': 'metrics.csv',
                     'miners': [],
                     'poll_interval': 30
                 }
@@ -55,7 +54,6 @@ class BitaxeWebServer:
         except Exception as e:
             print(f"Error loading config: {e}")
             return {
-                'csv_path': 'metrics.csv', 
                 'miners': [],
                 'poll_interval': 30
             }
@@ -180,43 +178,49 @@ class BitaxeWebServer:
             raise Exception(f'Database query failed: {str(e)}')
     
     def get_historical_data(self, hours: int = 24) -> Dict:
-        """Get historical data for the specified number of hours."""
-        csv_path = self.config.get('csv_path', 'metrics.csv')
-        
-        if not os.path.exists(csv_path):
-            return {'data': [], 'message': 'No historical data available'}
+        """Get historical data for the specified number of hours from database."""
+        if not self.db:
+            return {'data': [], 'message': 'Database not available'}
         
         try:
-            csv_data = load_csv_data(csv_path)
-            if not csv_data:
-                return {'data': [], 'message': 'No data in CSV file'}
-            
-            # Filter data by time range
             cutoff_time = datetime.now() - timedelta(hours=hours)
-            filtered_data = []
             
-            for row in csv_data:
-                try:
-                    timestamp = datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S')
-                    if timestamp >= cutoff_time:
-                        # Convert numeric fields
-                        processed_row = row.copy()
-                        numeric_fields = ['hashrate_ghs', 'temp_asic_c', 'temp_vr_c', 'power_w', 
-                                        'efficiency_j_th', 'uptime_hours', 'shares_accepted', 
-                                        'shares_rejected', 'wifi_rssi']
-                        
-                        for field in numeric_fields:
-                            if field in processed_row:
-                                try:
-                                    processed_row[field] = float(processed_row[field])
-                                except (ValueError, TypeError):
-                                    processed_row[field] = 0
-                        
-                        filtered_data.append(processed_row)
-                except ValueError:
-                    continue  # Skip rows with invalid timestamps
-            
-            return {'data': filtered_data, 'hours': hours}
+            with self.db.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Get historical data from database
+                cursor.execute("""
+                    SELECT r.*, m.ip_address, m.hostname 
+                    FROM raw_metrics r
+                    JOIN miners m ON r.miner_id = m.id
+                    WHERE r.timestamp >= ?
+                    ORDER BY r.timestamp DESC
+                """, (cutoff_time.isoformat(),))
+                
+                rows = cursor.fetchall()
+                data = []
+                
+                for row in rows:
+                    data.append({
+                        'timestamp': row['timestamp'],
+                        'hostname': row['hostname'],
+                        'ip': row['ip_address'],
+                        'status': row['status'],
+                        'hashrate_ghs': float(row['hashrate_ghs']) if row['hashrate_ghs'] else 0,
+                        'temp_asic_c': float(row['temp_asic_c']) if row['temp_asic_c'] else 0,
+                        'temp_vr_c': float(row['temp_vr_c']) if row['temp_vr_c'] else 0,
+                        'power_w': float(row['power_w']) if row['power_w'] else 0,
+                        'efficiency_j_th': float(row['efficiency_j_th']) if row['efficiency_j_th'] else 0,
+                        'uptime_hours': float(row['uptime_hours']) if row['uptime_hours'] else 0,
+                        'shares_accepted': int(row['shares_accepted']) if row['shares_accepted'] else 0,
+                        'shares_rejected': int(row['shares_rejected']) if row['shares_rejected'] else 0,
+                        'rejection_rate_percent': float(row['rejection_rate_percent']) if row['rejection_rate_percent'] else 0,
+                        'wifi_rssi': int(row['wifi_rssi']) if row['wifi_rssi'] else 0,
+                        'voltage_asic_set_v': float(row['voltage_asic_set_v']) if row['voltage_asic_set_v'] else 0,
+                        'frequency_set_mhz': float(row['frequency_set_mhz']) if row['frequency_set_mhz'] else 0,
+                    })
+                
+                return {'data': data, 'hours': hours}
             
         except Exception as e:
             return {'data': [], 'error': f'Error processing historical data: {str(e)}'}

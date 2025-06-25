@@ -12,18 +12,19 @@ from typing import Dict, List, Tuple, Optional, Any
 from pathlib import Path
 import logging
 import json
-import csv
+# CSV removed - using database-only operation
 from collections import defaultdict
 
-from cli_view import load_csv_data
+from .database import BitaxeDatabase
 
 
 class MiningOptimizationAnalyzer:
     """Analyzes mining data to find optimal voltage/frequency combinations."""
     
-    def __init__(self, csv_path: str = "metrics.csv"):
+    def __init__(self, db_path: str = "data/bitaxe_monitor.db"):
         """Initialize the optimization analyzer."""
-        self.csv_path = csv_path
+        self.db_path = db_path
+        self.db = BitaxeDatabase(db_path)
         self.logger = logging.getLogger(__name__)
         
         # Analysis parameters
@@ -32,21 +33,37 @@ class MiningOptimizationAnalyzer:
         self.benchmark_detection_threshold = 5  # Number of different settings to detect benchmarking
         
     def load_and_preprocess_data(self, hours: int = 24) -> pd.DataFrame:
-        """Load CSV data and preprocess for analysis."""
+        """Load database data and preprocess for analysis."""
         try:
-            # Load raw CSV data
-            raw_data = load_csv_data(self.csv_path)
-            if not raw_data:
-                self.logger.warning("No data found in CSV file")
-                return pd.DataFrame()
-            
-            # Convert to DataFrame
-            df = pd.DataFrame(raw_data)
-            
-            # Filter by time window
+            # Load data from database
             cutoff_time = datetime.now() - timedelta(hours=hours)
+            
+            with self.db.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Get raw metrics with miner information
+                cursor.execute("""
+                    SELECT r.*, m.ip_address, m.hostname 
+                    FROM raw_metrics r
+                    JOIN miners m ON r.miner_id = m.id
+                    WHERE r.timestamp >= ?
+                    ORDER BY r.timestamp DESC
+                """, (cutoff_time.isoformat(),))
+                
+                rows = cursor.fetchall()
+                if not rows:
+                    self.logger.warning("No data found in database")
+                    return pd.DataFrame()
+                
+                # Convert to DataFrame
+                data = []
+                for row in rows:
+                    data.append(dict(row))
+                
+                df = pd.DataFrame(data)
+            
+            # Convert timestamp column to datetime
             df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df = df[df['timestamp'] >= cutoff_time]
             
             # Convert numeric columns
             numeric_columns = [
@@ -631,7 +648,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Mining Optimization Analyzer')
-    parser.add_argument('--csv-path', default='metrics.csv', help='Path to CSV data file')
+    parser.add_argument('--db-path', default='data/bitaxe_monitor.db', help='Path to database file')
     parser.add_argument('--miner-ip', help='Analyze specific miner IP (for miner-specific analysis)')
     parser.add_argument('--fleet', action='store_true', help='Perform fleet-wide analysis (default when no miner-ip specified)')
     parser.add_argument('--hours', type=int, default=24, help='Analysis time window in hours')
@@ -644,12 +661,12 @@ def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     
     # Create analyzer
-    analyzer = MiningOptimizationAnalyzer(args.csv_path)
+    analyzer = MiningOptimizationAnalyzer(args.db_path)
     
     # Generate report
     print(f"🔍 Analyzing mining optimization data...")
     print(f"   Time window: {args.hours} hours")
-    print(f"   Data source: {args.csv_path}")
+    print(f"   Data source: {args.db_path}")
     if args.miner_ip:
         print(f"   Analysis type: Miner-specific ({args.miner_ip})")
     else:

@@ -82,13 +82,14 @@ A **beautiful, real-time monitoring solution** for Bitaxe Gamma mining devices w
 - 🐳 **Docker containerization** with docker-compose orchestration
 - 🗄️ **Advanced database system** with SQLite for performance analytics
 - 🔮 **Predictive analytics** with anomaly detection and maintenance alerts
-- 🧪 **Comprehensive test suite** with 146+ tests and high coverage
+- 🧪 **Comprehensive test suite** with 170+ tests and high coverage
 - 🔄 **CI/CD pipeline** with automated code quality checks
 - 🔒 **Security analysis** with CodeQL integration
-- 💾 **Persistent data storage** with automatic backups
-- 🛡️ **Robust error handling** and connection retry logic
-- 🌐 **Hostname caching** for network resilience
-- 📊 **CSV data export** for historical analysis
+- 💾 **Database-only operation** with robust startup checks
+- 🛡️ **Circuit breaker pattern** with exponential backoff for resilience
+- 🌐 **Health monitoring** with comprehensive container health checks
+- 📊 **Data export tools** for CSV analysis and backup
+- ⚡ **Automatic recovery** from network and database failures
 
 </td>
 </tr>
@@ -146,6 +147,12 @@ PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-cha
    
    # 🎯 Mining Optimization Analysis
    docker-compose exec bitaxe-enhanced python src/optimization_analyzer.py --hours 24 --show-chart
+   
+   # 🏥 Health Check
+   docker-compose exec bitaxe-enhanced python health_check.py
+   
+   # 📤 Export Data to CSV
+   docker-compose exec bitaxe-enhanced python -m src.data_export --hours 24 --output exported_data.csv
    ```
 
 ### Manual Installation
@@ -161,7 +168,22 @@ PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-cha
    # Edit config.yaml with your settings
    ```
 
-3. **Start monitoring:**
+3. **Start enhanced monitoring:**
+   ```bash
+   # 🚀 Enhanced Database Monitoring (Recommended)
+   python enhanced_monitor.py
+   
+   # 🌐 Web Dashboard (separate terminal)
+   python web_dashboard.py
+   
+   # 🏥 Health Check
+   python health_check.py --web
+   
+   # 📤 Export Data
+   python -m src.data_export --output backup.csv
+   ```
+
+4. **Legacy CSV monitoring:**
    ```bash
    python monitor.py
    ```

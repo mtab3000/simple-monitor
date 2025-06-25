@@ -26,6 +26,9 @@ class BitaxeDatabase:
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
         
+        # Perform startup checks
+        self._startup_checks()
+        
         # Initialize database schema
         self.init_schema()
         
@@ -65,6 +68,120 @@ class BitaxeDatabase:
         finally:
             if conn:
                 conn.close()
+    
+    def _startup_checks(self):
+        """Perform comprehensive startup checks for database health."""
+        self.logger.info("Performing database startup checks...")
+        
+        try:
+            # Check if database file is accessible
+            if self.db_path.exists():
+                # Test basic connection
+                with self.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT 1")
+                    cursor.fetchone()
+                
+                # Check database integrity
+                with self.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("PRAGMA integrity_check")
+                    integrity_result = cursor.fetchone()[0]
+                    
+                    if integrity_result != "ok":
+                        self.logger.error(f"Database integrity check failed: {integrity_result}")
+                        raise Exception(f"Database integrity check failed: {integrity_result}")
+                
+                # Check available disk space (warn if < 100MB)
+                import shutil
+                total, used, free = shutil.disk_usage(self.db_path.parent)
+                free_mb = free // (1024 * 1024)
+                
+                if free_mb < 100:
+                    self.logger.warning(f"Low disk space: {free_mb}MB available")
+                
+                # Check database size and warn if too large
+                db_size_mb = self.db_path.stat().st_size // (1024 * 1024)
+                if db_size_mb > 1000:  # 1GB
+                    self.logger.warning(f"Large database size: {db_size_mb}MB")
+                
+                self.logger.info(f"Database startup checks passed - Size: {db_size_mb}MB, Free space: {free_mb}MB")
+            else:
+                self.logger.info("Database file does not exist - will be created")
+                
+        except Exception as e:
+            self.logger.error(f"Database startup checks failed: {e}")
+            raise
+    
+    def validate_data_quality(self) -> Dict[str, Any]:
+        """Validate data quality and consistency in the database."""
+        self.logger.info("Validating database data quality...")
+        
+        issues = []
+        stats = {}
+        
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Check for orphaned records
+                cursor.execute("""
+                    SELECT COUNT(*) FROM raw_metrics rm 
+                    LEFT JOIN miners m ON rm.miner_id = m.id 
+                    WHERE m.id IS NULL
+                """)
+                orphaned_metrics = cursor.fetchone()[0]
+                if orphaned_metrics > 0:
+                    issues.append(f"Found {orphaned_metrics} orphaned metrics records")
+                
+                # Check for miners without recent data (> 24h old)
+                cursor.execute("""
+                    SELECT COUNT(*) FROM miners m 
+                    LEFT JOIN raw_metrics rm ON m.id = rm.miner_id 
+                    AND rm.timestamp > datetime('now', '-24 hours')
+                    WHERE rm.id IS NULL AND m.is_active = 1
+                """)
+                stale_miners = cursor.fetchone()[0]
+                if stale_miners > 0:
+                    issues.append(f"Found {stale_miners} active miners without recent data")
+                
+                # Get basic statistics
+                cursor.execute("SELECT COUNT(*) FROM miners")
+                stats['total_miners'] = cursor.fetchone()[0]
+                
+                cursor.execute("SELECT COUNT(*) FROM raw_metrics")
+                stats['total_metrics'] = cursor.fetchone()[0]
+                
+                cursor.execute("""
+                    SELECT COUNT(*) FROM raw_metrics 
+                    WHERE timestamp > datetime('now', '-24 hours')
+                """)
+                stats['recent_metrics'] = cursor.fetchone()[0]
+                
+                # Check data consistency
+                cursor.execute("""
+                    SELECT COUNT(*) FROM raw_metrics 
+                    WHERE hashrate_ghs < 0 OR power_w < 0 OR temp_asic_c < 0
+                """)
+                invalid_metrics = cursor.fetchone()[0]
+                if invalid_metrics > 0:
+                    issues.append(f"Found {invalid_metrics} metrics with invalid values")
+                
+                self.logger.info(f"Data quality check complete - {len(issues)} issues found")
+                
+                return {
+                    'valid': len(issues) == 0,
+                    'issues': issues,
+                    'stats': stats
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Data quality validation failed: {e}")
+            return {
+                'valid': False,
+                'issues': [f"Validation failed: {str(e)}"],
+                'stats': {}
+            }
     
     def init_schema(self):
         """Initialize database schema with all required tables."""

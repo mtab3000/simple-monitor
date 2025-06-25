@@ -37,9 +37,9 @@ RUN useradd -m -u 1000 bitaxe && \
 
 USER bitaxe
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)"
+# Health check using our comprehensive health checker
+HEALTHCHECK --interval=30s --timeout=30s --start-period=15s --retries=3 \
+    CMD python health_check.py --exit-code
 
 # Default command
 CMD ["python", "monitor.py"]
