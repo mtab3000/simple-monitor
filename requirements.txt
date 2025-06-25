@@ -13,6 +13,9 @@ urllib3>=1.26.0
 # Database and analytics dependencies
 # SQLite3 is built into Python, no additional dependencies needed
 
+# Web interface dependencies
+Flask>=2.3.0
+
 # Development dependencies (optional)
 # black>=22.0.0        # Code formatting
 pytest>=7.0.0         # Testing framework

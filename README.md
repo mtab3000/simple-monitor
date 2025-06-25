@@ -71,7 +71,8 @@ A **beautiful, real-time monitoring solution** for Bitaxe Gamma mining devices w
 <td width="50%">
 
 ### 🎨 **Beautiful Interface**
-- **Unicode icons** and color-coded status indicators
+- **Web dashboard** with responsive design and real-time updates  
+- **Terminal interface** with Unicode icons and color-coded status indicators
 - **Progress bars** for visual performance assessment
 - **Professional tables** with proper alignment
 - **Fleet health ratings** with emoji indicators
@@ -155,11 +156,14 @@ PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-cha
 
 4. **View the dashboard:**
    ```bash
-   # Basic monitoring
+   # Terminal interface
    python viewer.py --live
    
    # Enhanced monitoring with database and analytics
    python enhanced_monitor.py
+   
+   # Web interface (recommended)
+   python web_dashboard.py
    ```
 
 ## 📖 Usage
@@ -229,6 +233,26 @@ python src/data_migration.py --action migrate
 - **Historical analysis** with hourly and daily aggregations
 
 **See [Database & Analytics Documentation](docs/DATABASE_ANALYTICS.md) for detailed information.**
+
+### Web Dashboard
+
+**Start the web interface:**
+```bash
+python web_dashboard.py
+```
+
+**Custom host/port:**
+```bash
+python web_dashboard.py --host 0.0.0.0 --port 8080
+```
+
+**Web Features:**
+- **Responsive design** works on desktop, tablet, and mobile
+- **Real-time updates** every 5 seconds
+- **Fleet overview** with total statistics
+- **Individual miner cards** with detailed metrics
+- **Auto-refresh toggle** for manual control
+- **REST API endpoints** for integration
 
 ### Mining Optimization Analysis
 
@@ -569,9 +593,16 @@ simple-monitor/
 │   ├── analytics.py      # Performance analysis and predictions
 │   ├── enhanced_collector.py # Enhanced monitoring with analytics
 │   ├── data_migration.py # CSV to database migration tool
+│   ├── web_server.py     # Web server and API endpoints
 │   └── optimization_analyzer.py # Mining optimization analysis
 ├── docs/
 │   └── DATABASE_ANALYTICS.md # Database and analytics documentation
+├── web/
+│   ├── templates/        # HTML templates
+│   │   └── dashboard.html
+│   └── static/          # CSS and JavaScript
+│       ├── css/dashboard.css
+│       └── js/dashboard.js
 ├── tests/
 │   ├── __init__.py      # Test package initialization
 │   ├── test_collector.py # Unit tests for collector
@@ -595,7 +626,8 @@ simple-monitor/
 ├── README.md       # This documentation
 ├── monitor.py     # Main monitoring script
 ├── enhanced_monitor.py # Enhanced monitoring with database
-├── viewer.py     # Dashboard launcher
+├── viewer.py     # Terminal dashboard launcher
+├── web_dashboard.py # Web dashboard launcher
 └── setup.py     # Installation and setup
 ```
 
@@ -613,6 +645,7 @@ simple-monitor/
 - `PyYAML>=6.0` - Configuration file parsing
 - `rich>=12.0.0` - Beautiful terminal interface
 - `urllib3>=1.26.0` - HTTP library
+- `Flask>=2.3.0` - Web interface framework
 
 **Development & Testing:**
 - `pytest>=7.0.0` - Testing framework
