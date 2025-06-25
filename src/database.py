@@ -437,9 +437,9 @@ class BitaxeDatabase:
                     avg_efficiency_j_th,
                     rejection_rate_percent
                 FROM hourly_stats
-                WHERE miner_id = ? AND hour_start >= datetime('now', '-{} hours')
+                WHERE miner_id = ? AND hour_start >= datetime('now', '-' || ? || ' hours')
                 ORDER BY hour_start
-            """.format(hours), (miner_id,))
+            """, (miner_id, hours))
             
             data = cursor.fetchall()
             
@@ -481,9 +481,9 @@ class BitaxeDatabase:
                     AVG(hs.rejection_rate_percent) as avg_rejection_rate
                 FROM miners m
                 JOIN hourly_stats hs ON m.id = hs.miner_id
-                WHERE hs.hour_start >= datetime('now', '-{} days')
+                WHERE hs.hour_start >= datetime('now', '-' || ? || ' days')
                   AND m.is_active = 1
-            """.format(days))
+            """, (days,))
             
             fleet_stats = dict(cursor.fetchone())
             
@@ -497,12 +497,12 @@ class BitaxeDatabase:
                     AVG(hs.avg_efficiency_j_th) as avg_efficiency
                 FROM miners m
                 JOIN hourly_stats hs ON m.id = hs.miner_id
-                WHERE hs.hour_start >= datetime('now', '-{} days')
+                WHERE hs.hour_start >= datetime('now', '-' || ? || ' days')
                   AND m.is_active = 1
                 GROUP BY m.id
                 ORDER BY avg_uptime DESC, avg_hashrate DESC
                 LIMIT 5
-            """.format(days))
+            """, (days,))
             
             top_performers = [dict(row) for row in cursor.fetchall()]
             
@@ -518,14 +518,14 @@ class BitaxeDatabase:
                 FROM miners m
                 JOIN hourly_stats hs ON m.id = hs.miner_id
                 LEFT JOIN alerts a ON m.id = a.miner_id 
-                  AND a.timestamp >= datetime('now', '-{} days')
-                WHERE hs.hour_start >= datetime('now', '-{} days')
+                  AND a.timestamp >= datetime('now', '-' || ? || ' days')
+                WHERE hs.hour_start >= datetime('now', '-' || ? || ' days')
                   AND m.is_active = 1
                   AND (hs.uptime_percent < 95 OR hs.rejection_rate_percent > 5)
                 GROUP BY m.id
                 ORDER BY avg_uptime ASC, alert_count DESC
                 LIMIT 5
-            """.format(days, days))
+            """, (days, days))
             
             problem_miners = [dict(row) for row in cursor.fetchall()]
             

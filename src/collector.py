@@ -512,8 +512,8 @@ class BitaxeCollector:
                 if os.path.exists(temp_path):
                     try:
                         os.remove(temp_path)
-                    except:
-                        pass
+                    except OSError as cleanup_error:
+                        print(f"Warning: Could not remove temporary file {temp_path}: {cleanup_error}")
                 return False
 
     def collect_all_miners(self):

@@ -233,10 +233,10 @@ class PerformanceAnalyzer:
                     AVG(avg_efficiency_j_th) as daily_efficiency,
                     AVG(uptime_percent) as daily_uptime
                 FROM hourly_stats
-                WHERE miner_id = ? AND hour_start >= datetime('now', '-{} days')
+                WHERE miner_id = ? AND hour_start >= datetime('now', '-' || ? || ' days')
                 GROUP BY DATE(hour_start)
                 ORDER BY date
-            """.format(days), (miner_id,))
+            """, (miner_id, days))
             
             daily_data = cursor.fetchall()
             

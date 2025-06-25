@@ -99,4 +99,6 @@ jobs:
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
+        base: ""
+        head: ""
         extra_args: --debug --only-verified
