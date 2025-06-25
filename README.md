@@ -7,7 +7,7 @@ A **beautiful, real-time monitoring solution** for Bitaxe Gamma mining devices w
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/tests-27%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-65%20passing-brightgreen.svg)](tests/)
 [![Code Quality](https://img.shields.io/badge/code%20quality-pylint-yellow.svg)](.pylintrc)
 [![Security](https://img.shields.io/badge/security-CodeQL-purple.svg)](.github/workflows/codeql.yml)
 [![Mining Optimization](https://img.shields.io/badge/optimization-sweet%20spot%20analysis-orange.svg)](src/optimization_analyzer.py)
@@ -79,7 +79,7 @@ A **beautiful, real-time monitoring solution** for Bitaxe Gamma mining devices w
 
 ### 🏗️ **Enterprise Ready**
 - 🐳 **Docker containerization** with docker-compose orchestration
-- 🧪 **Comprehensive test suite** with 27 tests and high coverage
+- 🧪 **Comprehensive test suite** with 65+ tests and high coverage
 - 🔄 **CI/CD pipeline** with automated code quality checks
 - 🔒 **Security analysis** with CodeQL integration
 - 💾 **Persistent data storage** with automatic backups
@@ -341,7 +341,7 @@ codeql database analyze
 *Automatically discover optimal voltage/frequency combinations that maximize both performance and stability*
 
 [![Optimization](https://img.shields.io/badge/Algorithm-Sweet%20Spot%20Detection-orange.svg)](src/optimization_analyzer.py)
-[![Tests](https://img.shields.io/badge/Tests-27%20Passing-brightgreen.svg)](tests/test_optimization_analyzer.py)
+[![Tests](https://img.shields.io/badge/Tests-65%20Passing-brightgreen.svg)](tests/test_optimization_analyzer.py)
 [![Analysis](https://img.shields.io/badge/Analysis-Statistical%20Methods-blue.svg)](README.md#sweet-spot-algorithm)
 
 </div>
@@ -738,7 +738,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <sub>
 🤖 Enhanced with advanced optimization analytics | 
-📊 27 comprehensive tests | 
+📊 65+ comprehensive tests | 
 🔒 Enterprise security | 
 ⚡ Real-time monitoring
 </sub>
