@@ -3,7 +3,7 @@
 class BitaxeDashboard {
     constructor() {
         this.refreshInterval = null;
-        this.refreshRate = 5000; // 5 seconds
+        this.refreshRate = 30000; // 30 seconds
         this.isRefreshing = true;
         
         this.init();
@@ -149,34 +149,10 @@ class BitaxeDashboard {
                 
                 <div class="miner-metrics">
                     <div class="metric-item">
-                        <div class="metric-label">Hashrate</div>
+                        <div class="metric-label">Voltage Set</div>
                         <div class="metric-value">
-                            ${miner.hashrate_ghs.toFixed(1)} 
-                            <span class="metric-unit">GH/s</span>
-                        </div>
-                    </div>
-                    
-                    <div class="metric-item">
-                        <div class="metric-label">Power</div>
-                        <div class="metric-value">
-                            ${miner.power_w.toFixed(1)} 
-                            <span class="metric-unit">W</span>
-                        </div>
-                    </div>
-                    
-                    <div class="metric-item">
-                        <div class="metric-label">ASIC Temp</div>
-                        <div class="metric-value ${tempClass}">
-                            ${miner.temp_asic_c.toFixed(1)}
-                            <span class="metric-unit">°C</span>
-                        </div>
-                    </div>
-                    
-                    <div class="metric-item">
-                        <div class="metric-label">Efficiency</div>
-                        <div class="metric-value">
-                            ${miner.efficiency_j_th.toFixed(1)} 
-                            <span class="metric-unit">J/TH</span>
+                            ${miner.voltage_asic_set_v.toFixed(3)} 
+                            <span class="metric-unit">V</span>
                         </div>
                     </div>
                     
@@ -189,7 +165,47 @@ class BitaxeDashboard {
                     </div>
                     
                     <div class="metric-item">
-                        <div class="metric-label">Voltage</div>
+                        <div class="metric-label">Hashrate</div>
+                        <div class="metric-value">
+                            ${miner.hashrate_ghs.toFixed(1)} 
+                            <span class="metric-unit">GH/s</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-label">Expected Hash</div>
+                        <div class="metric-value">
+                            ${miner.expected_hashrate_ghs.toFixed(1)} 
+                            <span class="metric-unit">GH/s</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-label">Efficiency</div>
+                        <div class="metric-value">
+                            ${miner.efficiency_j_th.toFixed(1)} 
+                            <span class="metric-unit">J/TH</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-label">ASIC Temp</div>
+                        <div class="metric-value ${tempClass}">
+                            ${miner.temp_asic_c.toFixed(1)}
+                            <span class="metric-unit">°C</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-label">Power</div>
+                        <div class="metric-value">
+                            ${miner.power_w.toFixed(1)} 
+                            <span class="metric-unit">W</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-label">Voltage Actual</div>
                         <div class="metric-value">
                             ${miner.voltage_asic_actual_v.toFixed(3)} 
                             <span class="metric-unit">V</span>

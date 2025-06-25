@@ -1,83 +1,106 @@
 #!/usr/bin/env python3
 """
-Enhanced Collector for Bitaxe Gamma Monitor
-Provides advanced data collection with database integration and analytics
+Enhanced Database-Only Collector for Bitaxe Gamma Monitor
+Complete rewrite for pure database operation with miner restart detection
 """
 
 import time
 import signal
 import sys
+import requests
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any
-import logging
-import threading
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+import yaml
 
-from collector import BitaxeCollector  # Import original collector
-from database import BitaxeDatabase
-from analytics import PerformanceAnalyzer, PredictiveAnalyzer
+from .database import BitaxeDatabase
+from .analytics import PerformanceAnalyzer, PredictiveAnalyzer
 
 
-class EnhancedBitaxeCollector(BitaxeCollector):
-    """Enhanced collector with database integration and analytics."""
+class EnhancedBitaxeCollector:
+    """Database-only enhanced collector with optimized data flow."""
     
     def __init__(self, config_path: str = "config.yaml"):
         """Initialize the enhanced collector."""
-        # Initialize parent collector
-        super().__init__(config_path)
+        self.config_path = config_path
+        self.config = self.load_config()
+        self.running = False
         
         # Initialize database
         db_path = self.config.get('database_path', 'data/bitaxe_monitor.db')
         self.db = BitaxeDatabase(db_path)
         
-        # Initialize analytics
-        self.analyzer = PerformanceAnalyzer(self.db)
-        self.predictor = PredictiveAnalyzer(self.db)
+        # Initialize analytics (skip for now to avoid multiple connections)
+        self.analyzer = None  # PerformanceAnalyzer(self.db)
+        self.predictor = None  # PredictiveAnalyzer(self.db)
         
-        # Enhanced configuration options
-        self.config.update({
-            'enable_database': self.config.get('enable_database', True),
-            'enable_analytics': self.config.get('enable_analytics', True),
-            'analytics_interval': self.config.get('analytics_interval', 3600),  # 1 hour
-            'maintenance_interval': self.config.get('maintenance_interval', 86400),  # 24 hours
-            'alert_thresholds': self.config.get('alert_thresholds', {
-                'temp_critical': 90,
-                'temp_warning': 85,
-                'hashrate_drop_percent': 20,
-                'rejection_rate_percent': 5,
-                'efficiency_threshold': 20
-            })
-        })
+        # Setup HTTP session with retries
+        self.session = self.create_session()
         
-        # Tracking variables
-        self.last_analytics_run = 0
-        self.last_maintenance_run = 0
+        # Setup logging
+        self.setup_logging()
+        
+        # Collection statistics
         self.collection_stats = {
-            'total_collections': 0,
+            'start_time': time.time(),
             'successful_collections': 0,
             'failed_collections': 0,
-            'start_time': time.time()
+            'total_collections': 0,
+            'miners_online': 0,
+            'miners_total': len(self.config.get('miners', []))
         }
         
-        # Threading for background tasks
-        self.analytics_thread = None
-        self.maintenance_thread = None
-        self.running = False
+        # Background task timers
+        self.last_analytics_run = 0
+        self.last_maintenance_run = 0
+        self.analytics_interval = self.config.get('analytics_interval', 1800)  # 30 minutes
+        self.maintenance_interval = self.config.get('maintenance_interval', 43200)  # 12 hours
         
-        # Setup enhanced logging
-        self.setup_enhanced_logging()
-        
-        self.logger.info("Enhanced collector initialized with database and analytics")
+        self.logger.info("Enhanced collector initialized - Database-only mode")
     
-    def setup_enhanced_logging(self):
-        """Setup enhanced logging with performance metrics."""
+    def load_config(self) -> Dict:
+        """Load configuration from YAML file."""
+        try:
+            with open(self.config_path, 'r') as f:
+                config = yaml.safe_load(f)
+            
+            # Set defaults
+            config.setdefault('poll_interval', 30)
+            config.setdefault('timeout', 10)
+            config.setdefault('retries', 3)
+            
+            return config
+        except Exception as e:
+            print(f"Error loading config: {e}")
+            sys.exit(1)
+    
+    def create_session(self):
+        """Create HTTP session with retry strategy."""
+        session = requests.Session()
+        
+        retry_strategy = Retry(
+            total=self.config.get('retries', 3),
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+        )
+        
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        
+        return session
+    
+    def setup_logging(self):
+        """Setup enhanced logging."""
         log_level = self.config.get('log_level', 'INFO')
         log_file = self.config.get('log_file', 'data/collector.log')
         
-        # Create log directory if it doesn't exist
+        # Ensure log directory exists
         Path(log_file).parent.mkdir(parents=True, exist_ok=True)
         
-        # Configure logging
         logging.basicConfig(
             level=getattr(logging, log_level),
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -89,339 +112,240 @@ class EnhancedBitaxeCollector(BitaxeCollector):
         
         self.logger = logging.getLogger(__name__)
     
+    def collect_miner_data(self, miner_config: Dict) -> Dict:
+        """Collect data from a single miner."""
+        miner_ip = miner_config.get('ip')
+        expected_hashrate = miner_config.get('expected_hashrate_ghs', 0)
+        
+        try:
+            # Make API call
+            response = self.session.get(
+                f"http://{miner_ip}/api/system/info", 
+                timeout=self.config.get('timeout', 10)
+            )
+            
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}")
+            
+            data = response.json()
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Parse and calculate metrics
+            uptime_seconds = int(data.get('uptimeSeconds', 0))
+            uptime_hours = round(uptime_seconds / 3600, 2)
+            
+            hashrate_ghs = float(data.get('hashRate', 0))
+            power_w = float(data.get('power', 0))
+            efficiency_j_th = round((power_w * 1000) / (hashrate_ghs * 1000), 2) if hashrate_ghs > 0 else 0
+            
+            shares_accepted = int(data.get('sharesAccepted', 0))
+            shares_rejected = int(data.get('sharesRejected', 0))
+            
+            # Create optimized metrics record
+            metrics = {
+                'timestamp': timestamp,
+                'miner_ip': miner_ip,
+                'hostname': data.get('hostname', f'miner-{miner_ip.split(".")[-1]}'),
+                'status': 'online',
+                'hashrate_ghs': hashrate_ghs,
+                'expected_hashrate_ghs': expected_hashrate,
+                'hashrate_ratio_percent': round((hashrate_ghs / expected_hashrate) * 100, 1) if expected_hashrate > 0 else 0,
+                'efficiency_j_th': efficiency_j_th,
+                'temp_asic_c': float(data.get('temp', 0)),
+                'temp_vr_c': float(data.get('vrTemp', 0)),
+                'power_w': power_w,
+                'voltage_asic_set_v': float(data.get('coreVoltage', 0)) / 1000,  # mV to V
+                'voltage_asic_actual_v': float(data.get('coreVoltageActual', 0)) / 1000,
+                'voltage_device_v': float(data.get('voltage', 0)) / 1000,
+                'frequency_set_mhz': float(data.get('frequency', 0)),
+                'current_a': float(data.get('current', 0)) / 1000,  # mA to A
+                'shares_accepted': shares_accepted,
+                'shares_rejected': shares_rejected,
+                'uptime_hours': uptime_hours,
+                'wifi_rssi': int(data.get('wifiRSSI', 0)),
+                'fan_rpm': int(data.get('fanrpm', 0)),
+                'connected_pool': data.get('stratumURL', ''),
+            }
+            
+            self.logger.debug(f"✓ {miner_ip}: {uptime_hours:.1f}h uptime, {hashrate_ghs:.1f} GH/s")
+            return metrics
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to collect from {miner_ip}: {e}")
+            # Return offline record
+            return {
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'miner_ip': miner_ip,
+                'hostname': f'miner-{miner_ip.split(".")[-1]}',
+                'status': 'connection_failed',
+                'hashrate_ghs': 0,
+                'expected_hashrate_ghs': expected_hashrate,
+                'hashrate_ratio_percent': 0,
+                'efficiency_j_th': 0,
+                'temp_asic_c': 0,
+                'temp_vr_c': 0,
+                'power_w': 0,
+                'voltage_asic_set_v': 0,
+                'voltage_asic_actual_v': 0,
+                'voltage_device_v': 0,
+                'frequency_set_mhz': 0,
+                'current_a': 0,
+                'shares_accepted': 0,
+                'shares_rejected': 0,
+                'uptime_hours': 0,
+                'wifi_rssi': 0,
+                'fan_rpm': 0,
+                'connected_pool': '',
+            }
+    
     def collect_once(self):
-        """Enhanced single collection cycle with database integration."""
+        """Single collection cycle - database only."""
         collection_start = time.time()
         self.collection_stats['total_collections'] += 1
         
         try:
-            self.logger.info("Starting enhanced collection cycle")
+            self.logger.info("Starting collection cycle")
             
-            # Collect metrics from all miners
+            # Collect from all miners
             all_metrics = []
-            successful_miners = 0
+            online_count = 0
             
             for miner_config in self.config['miners']:
-                try:
-                    metrics = self.fetch_miner_data(miner_config)
-                    all_metrics.append(metrics)
-                    
-                    if metrics['status'] == 'online':
-                        successful_miners += 1
-                        
-                except Exception as e:
-                    self.logger.error(f"Failed to collect from {miner_config.get('ip', 'unknown')}: {e}")
-                    # Create offline entry
-                    offline_metrics = {
-                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                        'miner_ip': miner_config.get('ip', 'unknown'),
-                        'hostname': 'Unknown',
-                        'status': 'connection_failed',
-                        'expected_hashrate_ghs': miner_config.get('expected_hashrate_ghs', 0)
-                    }
-                    all_metrics.append(offline_metrics)
+                metrics = self.collect_miner_data(miner_config)
+                all_metrics.append(metrics)
+                
+                if metrics['status'] == 'online':
+                    online_count += 1
             
-            # Save to CSV (maintain backward compatibility)
-            if self.config.get('enable_csv', True):
-                csv_success = self.append_metrics_to_csv_safe(all_metrics)
-                if not csv_success:
-                    self.logger.warning("CSV write failed, but continuing with database storage")
-            
-            # Save to database
-            if self.config.get('enable_database', True) and all_metrics:
+            # Store in database only
+            if all_metrics:
                 try:
+                    # Insert to database first
                     self.db.insert_raw_metrics(all_metrics)
-                    self.logger.debug(f"Inserted {len(all_metrics)} records to database")
+                    
+                    # Check for miner restarts after successful insertion
+                    for metrics in all_metrics:
+                        if metrics['status'] == 'online' and metrics['uptime_hours'] > 0:
+                            try:
+                                self.db.handle_miner_restart(metrics['miner_ip'], metrics['uptime_hours'])
+                            except Exception as restart_error:
+                                self.logger.warning(f"Restart detection failed for {metrics['miner_ip']}: {restart_error}")
+                    
+                    self.collection_stats['successful_collections'] += 1
+                    self.collection_stats['miners_online'] = online_count
+                    
+                    collection_time = time.time() - collection_start
+                    self.logger.info(f"✓ Collection complete: {online_count}/{len(self.config['miners'])} online, "
+                                   f"{collection_time:.2f}s, {len(all_metrics)} records stored")
+                    
                 except Exception as e:
-                    self.logger.error(f"Database insertion failed: {e}")
+                    self.logger.error(f"Database storage failed: {e}")
+                    self.collection_stats['failed_collections'] += 1
+                    import traceback
+                    traceback.print_exc()
             
-            # Update collection statistics
-            collection_time = time.time() - collection_start
-            self.collection_stats['successful_collections'] += 1
-            
-            # Log collection summary
-            self.logger.info(f"Collection completed: {successful_miners}/{len(self.config['miners'])} miners online, "
-                           f"took {collection_time:.2f}s")
-            
-            # Check if analytics should run
-            self._check_analytics_schedule()
-            
-            # Check if maintenance should run
-            self._check_maintenance_schedule()
+            # Background tasks
+            self._run_background_tasks()
             
         except Exception as e:
-            self.collection_stats['failed_collections'] += 1
             self.logger.error(f"Collection cycle failed: {e}")
-            raise
+            self.collection_stats['failed_collections'] += 1
     
-    def _check_analytics_schedule(self):
-        """Check if analytics should be run based on schedule."""
+    def _run_background_tasks(self):
+        """Run analytics and maintenance tasks."""
         current_time = time.time()
-        analytics_interval = self.config.get('analytics_interval', 3600)
         
-        if (current_time - self.last_analytics_run) >= analytics_interval:
-            if self.config.get('enable_analytics', True):
-                self._run_analytics_background()
+        # Only run background tasks if we have successful collections
+        if self.collection_stats['successful_collections'] == 0:
+            return
+        
+        # Analytics
+        if current_time - self.last_analytics_run > self.analytics_interval:
             self.last_analytics_run = current_time
-    
-    def _check_maintenance_schedule(self):
-        """Check if maintenance should be run based on schedule."""
-        current_time = time.time()
-        maintenance_interval = self.config.get('maintenance_interval', 86400)
+            try:
+                self.logger.info("Running analytics...")
+                self.db.generate_hourly_stats()
+                self.logger.info("Analytics completed")
+            except Exception as e:
+                self.logger.warning(f"Analytics skipped due to error: {e}")
         
-        if (current_time - self.last_maintenance_run) >= maintenance_interval:
-            self._run_maintenance_background()
+        # Maintenance  
+        if current_time - self.last_maintenance_run > self.maintenance_interval:
             self.last_maintenance_run = current_time
+            try:
+                self.logger.info("Running maintenance...")
+                self.db.cleanup_old_data(days_to_keep=7)
+                self.logger.info("Maintenance completed")
+            except Exception as e:
+                self.logger.warning(f"Maintenance skipped due to error: {e}")
     
-    def _run_analytics_background(self):
-        """Run analytics in background thread."""
-        if self.analytics_thread and self.analytics_thread.is_alive():
-            self.logger.debug("Analytics already running, skipping")
-            return
-        
-        self.analytics_thread = threading.Thread(target=self._analytics_worker, daemon=True)
-        self.analytics_thread.start()
-    
-    def _run_maintenance_background(self):
-        """Run maintenance in background thread."""
-        if self.maintenance_thread and self.maintenance_thread.is_alive():
-            self.logger.debug("Maintenance already running, skipping")
-            return
-        
-        self.maintenance_thread = threading.Thread(target=self._maintenance_worker, daemon=True)
-        self.maintenance_thread.start()
-    
-    def _analytics_worker(self):
-        """Background worker for analytics tasks."""
-        try:
-            self.logger.info("Running analytics tasks...")
-            
-            # Generate hourly statistics
-            self.db.generate_hourly_stats()
-            
-            # Check each active miner for alerts
-            with self.db.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id, ip_address, hostname FROM miners WHERE is_active = 1")
-                miners = cursor.fetchall()
-            
-            alert_count = 0
-            for miner in miners:
-                miner_id = miner['id']
-                
-                # Detect anomalies
-                anomalies = self.analyzer.detect_anomalies(miner_id, hours=24)
-                
-                # Create alerts for significant anomalies
-                for anomaly in anomalies:
-                    if anomaly['severity'] in ['warning', 'critical']:
-                        self._create_alert(miner_id, anomaly)
-                        alert_count += 1
-                
-                # Check for predictive maintenance needs
-                maintenance_prediction = self.predictor.predict_maintenance_needs(miner_id)
-                if maintenance_prediction['maintenance_score'] > 70:
-                    self._create_maintenance_alert(miner_id, maintenance_prediction)
-                    alert_count += 1
-            
-            self.logger.info(f"Analytics completed, generated {alert_count} alerts")
-            
-        except Exception as e:
-            self.logger.error(f"Analytics worker failed: {e}")
-    
-    def _maintenance_worker(self):
-        """Background worker for maintenance tasks."""
-        try:
-            self.logger.info("Running maintenance tasks...")
-            
-            # Database maintenance
-            self.db.maintenance_tasks()
-            
-            # Log collection statistics
-            uptime = time.time() - self.collection_stats['start_time']
-            success_rate = (self.collection_stats['successful_collections'] / 
-                          max(self.collection_stats['total_collections'], 1)) * 100
-            
-            self.logger.info(f"Collection stats - Uptime: {uptime/3600:.1f}h, "
-                           f"Success rate: {success_rate:.1f}%, "
-                           f"Total collections: {self.collection_stats['total_collections']}")
-            
-        except Exception as e:
-            self.logger.error(f"Maintenance worker failed: {e}")
-    
-    def _create_alert(self, miner_id: int, anomaly: Dict[str, Any]):
-        """Create an alert in the database."""
-        try:
-            with self.db.get_connection() as conn:
-                cursor = conn.cursor()
-                
-                cursor.execute("""
-                    INSERT INTO alerts (miner_id, alert_type, severity, message, value, threshold)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    miner_id,
-                    anomaly['type'],
-                    anomaly['severity'],
-                    f"{anomaly['type'].replace('_', ' ').title()}: {anomaly.get('value', 'N/A')}",
-                    anomaly.get('value'),
-                    anomaly.get('threshold')
-                ))
-                
-                conn.commit()
-                self.logger.debug(f"Created alert for miner {miner_id}: {anomaly['type']}")
-                
-        except Exception as e:
-            self.logger.error(f"Failed to create alert: {e}")
-    
-    def _create_maintenance_alert(self, miner_id: int, prediction: Dict[str, Any]):
-        """Create a maintenance alert."""
-        try:
-            message = f"Maintenance recommended (score: {prediction['maintenance_score']})"
-            if prediction['predicted_issues']:
-                issues = [issue['description'] for issue in prediction['predicted_issues']]
-                message += f" - Issues: {', '.join(issues[:2])}"
-            
-            with self.db.get_connection() as conn:
-                cursor = conn.cursor()
-                
-                cursor.execute("""
-                    INSERT INTO alerts (miner_id, alert_type, severity, message, value)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (
-                    miner_id,
-                    'maintenance_needed',
-                    'warning' if prediction['maintenance_score'] < 85 else 'critical',
-                    message,
-                    prediction['maintenance_score']
-                ))
-                
-                conn.commit()
-                self.logger.info(f"Created maintenance alert for miner {miner_id}")
-                
-        except Exception as e:
-            self.logger.error(f"Failed to create maintenance alert: {e}")
-    
-    def get_collection_status(self) -> Dict[str, Any]:
-        """Get current collection status and statistics."""
-        uptime = time.time() - self.collection_stats['start_time']
-        
-        status = {
-            'running': self.running,
-            'uptime_hours': uptime / 3600,
-            'total_collections': self.collection_stats['total_collections'],
-            'successful_collections': self.collection_stats['successful_collections'],
-            'failed_collections': self.collection_stats['failed_collections'],
-            'success_rate_percent': (self.collection_stats['successful_collections'] / 
-                                   max(self.collection_stats['total_collections'], 1)) * 100,
-            'last_analytics_run': datetime.fromtimestamp(self.last_analytics_run).isoformat() if self.last_analytics_run else None,
-            'last_maintenance_run': datetime.fromtimestamp(self.last_maintenance_run).isoformat() if self.last_maintenance_run else None,
-            'analytics_running': self.analytics_thread and self.analytics_thread.is_alive(),
-            'maintenance_running': self.maintenance_thread and self.maintenance_thread.is_alive()
-        }
-        
-        return status
-    
-    def run_enhanced_monitoring(self):
-        """Run the enhanced monitoring loop with graceful shutdown."""
+    def run(self):
+        """Main collection loop."""
         self.running = True
         
-        # Setup signal handlers for graceful shutdown
+        # Setup signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
         
-        self.logger.info("Starting enhanced monitoring loop...")
-        self.logger.info(f"Configuration: {len(self.config['miners'])} miners, "
-                        f"{self.config['poll_interval']}s interval, "
-                        f"database: {self.config.get('enable_database', True)}, "
-                        f"analytics: {self.config.get('enable_analytics', True)}")
+        self.logger.info(f"Starting enhanced collector - monitoring {len(self.config['miners'])} miners")
         
-        try:
-            while self.running:
-                cycle_start = time.time()
+        while self.running:
+            try:
+                self.collect_once()
                 
-                try:
-                    self.collect_once()
-                except Exception as e:
-                    self.logger.error(f"Collection failed: {e}")
-                
-                # Calculate sleep time
-                cycle_duration = time.time() - cycle_start
-                sleep_time = max(0, self.config['poll_interval'] - cycle_duration)
-                
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
-                else:
-                    self.logger.warning(f"Collection took {cycle_duration:.1f}s, "
-                                      f"longer than interval {self.config['poll_interval']}s")
+                if self.running:  # Check if still running after collection
+                    time.sleep(self.config.get('poll_interval', 30))
+                    
+            except KeyboardInterrupt:
+                self.logger.info("Received interrupt signal")
+                break
+            except Exception as e:
+                self.logger.error(f"Unexpected error: {e}")
+                time.sleep(10)  # Wait before retry
         
-        except KeyboardInterrupt:
-            self.logger.info("Received interrupt signal")
-        finally:
-            self._shutdown()
+        self.logger.info("Enhanced collector stopped")
     
     def _signal_handler(self, signum, frame):
-        """Handle shutdown signals gracefully."""
-        self.logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+        """Handle shutdown signals."""
+        self.logger.info(f"Received signal {signum}, shutting down...")
         self.running = False
     
-    def _shutdown(self):
-        """Perform graceful shutdown."""
-        self.logger.info("Shutting down enhanced collector...")
+    def get_status(self) -> Dict[str, Any]:
+        """Get collector status."""
+        uptime = time.time() - self.collection_stats['start_time']
+        total_collections = self.collection_stats['total_collections']
         
-        # Wait for background threads to complete
-        if self.analytics_thread and self.analytics_thread.is_alive():
-            self.logger.info("Waiting for analytics to complete...")
-            self.analytics_thread.join(timeout=30)
-        
-        if self.maintenance_thread and self.maintenance_thread.is_alive():
-            self.logger.info("Waiting for maintenance to complete...")
-            self.maintenance_thread.join(timeout=30)
-        
-        # Final statistics
-        status = self.get_collection_status()
-        self.logger.info(f"Final stats: {status['total_collections']} collections, "
-                        f"{status['success_rate_percent']:.1f}% success rate, "
-                        f"{status['uptime_hours']:.1f}h uptime")
-        
-        self.logger.info("Enhanced collector shutdown complete")
+        return {
+            'running': self.running,
+            'uptime_hours': uptime / 3600,
+            'total_collections': total_collections,
+            'successful_collections': self.collection_stats['successful_collections'],
+            'failed_collections': self.collection_stats['failed_collections'],
+            'success_rate': (self.collection_stats['successful_collections'] / max(total_collections, 1)) * 100,
+            'miners_online': self.collection_stats['miners_online'],
+            'miners_total': self.collection_stats['miners_total']
+        }
 
 
 def main():
-    """Main entry point for the enhanced collector."""
+    """Main entry point."""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Enhanced Bitaxe Monitor Collector')
+    parser = argparse.ArgumentParser(description='Enhanced Bitaxe Collector - Database Only')
     parser.add_argument('--config', default='config.yaml', help='Configuration file path')
-    parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], 
-                       default='INFO', help='Logging level')
-    parser.add_argument('--analytics-interval', type=int, default=3600,
-                       help='Analytics interval in seconds')
-    parser.add_argument('--maintenance-interval', type=int, default=86400,
-                       help='Maintenance interval in seconds')
+    parser.add_argument('--test', action='store_true', help='Run single collection test')
     
     args = parser.parse_args()
     
-    # Create enhanced collector
-    try:
-        collector = EnhancedBitaxeCollector(args.config)
-        
-        # Override configuration with command line arguments
-        collector.config['log_level'] = args.log_level
-        collector.config['analytics_interval'] = args.analytics_interval
-        collector.config['maintenance_interval'] = args.maintenance_interval
-        
-        # Re-setup logging with new level
-        collector.setup_enhanced_logging()
-        
-        # Run monitoring
-        collector.run_enhanced_monitoring()
-        
-    except KeyboardInterrupt:
-        print("\nInterrupted by user")
-        sys.exit(0)
-    except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1)
+    collector = EnhancedBitaxeCollector(args.config)
+    
+    if args.test:
+        print("Running single collection test...")
+        collector.collect_once()
+        status = collector.get_status()
+        print(f"Test complete: {status}")
+    else:
+        collector.run()
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ from datetime import datetime
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from web_server import BitaxeWebServer
+from src.web_server import BitaxeWebServer
 
 
 class TestBitaxeWebServer:

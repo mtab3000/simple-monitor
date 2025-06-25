@@ -11,8 +11,8 @@ from unittest.mock import Mock, patch
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from database import BitaxeDatabase
-from analytics import PerformanceAnalyzer, PredictiveAnalyzer
+from src.database import BitaxeDatabase
+from src.analytics import PerformanceAnalyzer, PredictiveAnalyzer
 
 
 class TestPerformanceAnalyzer:

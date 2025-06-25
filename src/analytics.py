@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import logging
 import math
 
-from database import BitaxeDatabase
+from .database import BitaxeDatabase
 
 
 class PerformanceAnalyzer:

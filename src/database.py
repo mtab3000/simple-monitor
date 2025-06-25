@@ -37,24 +37,34 @@ class BitaxeDatabase:
     @contextmanager
     def get_connection(self):
         """Context manager for database connections with optimization."""
-        conn = sqlite3.connect(self.db_path, timeout=30.0)
-        
-        # Enable performance optimizations
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
-        conn.execute("PRAGMA cache_size=10000")
-        conn.execute("PRAGMA temp_store=MEMORY")
-        
-        # Enable foreign keys
-        conn.execute("PRAGMA foreign_keys=ON")
-        
-        # Set row factory for dict-like access
-        conn.row_factory = sqlite3.Row
-        
+        conn = None
         try:
+            conn = sqlite3.connect(self.db_path, timeout=60.0)
+            
+            # Enable performance optimizations
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute("PRAGMA cache_size=10000")
+            conn.execute("PRAGMA temp_store=MEMORY")
+            conn.execute("PRAGMA busy_timeout=30000")  # 30 second busy timeout
+            
+            # Enable foreign keys
+            conn.execute("PRAGMA foreign_keys=ON")
+            
+            # Set row factory for dict-like access
+            conn.row_factory = sqlite3.Row
+            
             yield conn
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                self.logger.warning("Database locked, retrying...")
+                time.sleep(0.1)
+                raise e
+            else:
+                raise e
         finally:
-            conn.close()
+            if conn:
+                conn.close()
     
     def init_schema(self):
         """Initialize database schema with all required tables."""
@@ -74,36 +84,38 @@ class BitaxeDatabase:
                 )
             """)
             
-            # Raw metrics table - time series data
+            # Raw metrics table - optimized for mining performance tracking
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS raw_metrics (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     miner_id INTEGER NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
                     status TEXT NOT NULL,
+                    -- Core mining performance
                     hashrate_ghs REAL,
                     expected_hashrate_ghs REAL,
                     hashrate_ratio_percent REAL,
+                    efficiency_j_th REAL,
+                    -- Temperature monitoring
                     temp_asic_c REAL,
                     temp_vr_c REAL,
+                    -- Power and electrical
                     power_w REAL,
                     voltage_asic_set_v REAL,
                     voltage_asic_actual_v REAL,
                     voltage_device_v REAL,
                     frequency_set_mhz REAL,
-                    efficiency_j_th REAL,
+                    current_a REAL,
+                    -- Mining statistics
                     shares_accepted INTEGER,
                     shares_rejected INTEGER,
+                    rejection_rate_percent REAL,
+                    -- System status
                     uptime_hours REAL,
                     wifi_rssi INTEGER,
-                    fan_speed_percent INTEGER,
                     fan_rpm INTEGER,
-                    free_heap_bytes INTEGER,
-                    overclock_enabled BOOLEAN,
-                    current_a REAL,
-                    pool_user TEXT,
-                    best_session_diff TEXT,
-                    raw_data TEXT,  -- JSON for extensibility
+                    -- Pool connection (simplified)
+                    connected_pool TEXT,
                     FOREIGN KEY (miner_id) REFERENCES miners (id) ON DELETE CASCADE
                 )
             """)
@@ -245,56 +257,157 @@ class BitaxeDatabase:
             cursor = conn.cursor()
             
             for metrics in metrics_batch:
-                # Get or create miner
-                miner_id = self.add_or_update_miner(
-                    metrics['miner_ip'],
-                    metrics.get('hostname'),
-                    float(metrics.get('expected_hashrate_ghs', 0))
-                )
+                # Get or create miner (inline to avoid nested connections)
+                ip_address = metrics['miner_ip']
+                hostname = metrics.get('hostname')
+                expected_hashrate_ghs = float(metrics.get('expected_hashrate_ghs', 0))
                 
-                # Prepare data for insertion
+                # Try to update existing miner
+                cursor.execute("""
+                    UPDATE miners 
+                    SET hostname = COALESCE(?, hostname),
+                        expected_hashrate_ghs = COALESCE(?, expected_hashrate_ghs),
+                        updated_at = CURRENT_TIMESTAMP,
+                        is_active = 1
+                    WHERE ip_address = ?
+                """, (hostname, expected_hashrate_ghs if expected_hashrate_ghs > 0 else None, ip_address))
+                
+                if cursor.rowcount == 0:
+                    # Insert new miner
+                    cursor.execute("""
+                        INSERT INTO miners (ip_address, hostname, expected_hashrate_ghs)
+                        VALUES (?, ?, ?)
+                    """, (ip_address, hostname or f"Miner-{ip_address.split('.')[-1]}", expected_hashrate_ghs))
+                    miner_id = cursor.lastrowid
+                else:
+                    # Get existing miner ID
+                    cursor.execute("SELECT id FROM miners WHERE ip_address = ?", (ip_address,))
+                    miner_id = cursor.fetchone()[0]
+                
+                # Calculate rejection rate
+                shares_accepted = int(metrics.get('shares_accepted', 0))
+                shares_rejected = int(metrics.get('shares_rejected', 0))
+                total_shares = shares_accepted + shares_rejected
+                rejection_rate = (shares_rejected / total_shares * 100) if total_shares > 0 else 0
+                
+                # Prepare optimized data for insertion
                 insert_data = (
                     miner_id,
                     metrics['timestamp'],
                     metrics['status'],
+                    # Core mining performance
                     float(metrics.get('hashrate_ghs', 0)),
                     float(metrics.get('expected_hashrate_ghs', 0)),
                     float(metrics.get('hashrate_ratio_percent', 0)),
+                    float(metrics.get('efficiency_j_th', 0)),
+                    # Temperature monitoring
                     float(metrics.get('temp_asic_c', 0)),
                     float(metrics.get('temp_vr_c', 0)),
+                    # Power and electrical
                     float(metrics.get('power_w', 0)),
                     float(metrics.get('voltage_asic_set_v', 0)),
                     float(metrics.get('voltage_asic_actual_v', 0)),
                     float(metrics.get('voltage_device_v', 0)),
                     float(metrics.get('frequency_set_mhz', 0)),
-                    float(metrics.get('efficiency_j_th', 0)),
-                    int(metrics.get('shares_accepted', 0)),
-                    int(metrics.get('shares_rejected', 0)),
+                    float(metrics.get('current_a', 0)),
+                    # Mining statistics
+                    shares_accepted,
+                    shares_rejected,
+                    rejection_rate,
+                    # System status
                     float(metrics.get('uptime_hours', 0)),
                     int(metrics.get('wifi_rssi', 0)),
-                    int(metrics.get('fan_speed_percent', 0)),
                     int(metrics.get('fan_rpm', 0)),
-                    int(metrics.get('free_heap_bytes', 0)),
-                    bool(metrics.get('overclock_enabled', False)),
-                    float(metrics.get('current_a', 0)),
-                    metrics.get('pool_user', ''),
-                    metrics.get('best_session_diff', ''),
-                    json.dumps(metrics)  # Store raw data as JSON
+                    # Pool connection (simplified)
+                    metrics.get('stratum_url', '')
                 )
                 
                 cursor.execute("""
                     INSERT INTO raw_metrics (
-                        miner_id, timestamp, status, hashrate_ghs, expected_hashrate_ghs,
-                        hashrate_ratio_percent, temp_asic_c, temp_vr_c, power_w,
-                        voltage_asic_set_v, voltage_asic_actual_v, voltage_device_v,
-                        frequency_set_mhz, efficiency_j_th, shares_accepted, shares_rejected,
-                        uptime_hours, wifi_rssi, fan_speed_percent, fan_rpm, free_heap_bytes,
-                        overclock_enabled, current_a, pool_user, best_session_diff, raw_data
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        miner_id, timestamp, status, 
+                        hashrate_ghs, expected_hashrate_ghs, hashrate_ratio_percent, efficiency_j_th,
+                        temp_asic_c, temp_vr_c, 
+                        power_w, voltage_asic_set_v, voltage_asic_actual_v, voltage_device_v, 
+                        frequency_set_mhz, current_a,
+                        shares_accepted, shares_rejected, rejection_rate_percent,
+                        uptime_hours, wifi_rssi, fan_rpm, connected_pool
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, insert_data)
             
             conn.commit()
             self.logger.info(f"Inserted {len(metrics_batch)} raw metrics records")
+    
+    def handle_miner_restart(self, miner_ip: str, current_uptime: float):
+        """Handle data hygiene when a miner restart is detected."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Get miner ID
+            cursor.execute("SELECT id FROM miners WHERE ip_address = ?", (miner_ip,))
+            result = cursor.fetchone()
+            if not result:
+                return
+            
+            miner_id = result[0]
+            
+            # Get the last recorded uptime for this miner
+            cursor.execute("""
+                SELECT uptime_hours FROM raw_metrics 
+                WHERE miner_id = ? 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+            """, (miner_id,))
+            
+            last_uptime_result = cursor.fetchone()
+            if not last_uptime_result:
+                return
+                
+            last_uptime = last_uptime_result[0]
+            
+            # If current uptime is significantly less than last uptime, 
+            # this indicates a restart (reduced threshold for tuning process)
+            if last_uptime and current_uptime < (last_uptime - 0.1):  # 6 minute threshold for tuning
+                self.logger.info(f"Miner restart detected for {miner_ip}: "
+                               f"uptime dropped from {last_uptime:.2f}h to {current_uptime:.2f}h")
+                
+                # Mark a restart event in the database
+                cursor.execute("""
+                    INSERT INTO alerts (miner_id, alert_type, severity, message, 
+                                      value, threshold, timestamp, is_resolved)
+                    VALUES (?, 'restart', 'info', 'Miner restart detected', ?, ?, ?, 1)
+                """, (miner_id, current_uptime, last_uptime, datetime.now().isoformat()))
+                
+                conn.commit()
+                self.logger.info(f"Logged restart event for miner {miner_ip}")
+    
+    def cleanup_old_data(self, days_to_keep: int = 7):
+        """Clean up old raw metrics data to maintain database performance."""
+        cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+        
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Delete old raw metrics
+            cursor.execute("""
+                DELETE FROM raw_metrics 
+                WHERE timestamp < ?
+            """, (cutoff_date.isoformat(),))
+            
+            deleted_count = cursor.rowcount
+            
+            # Delete resolved alerts older than 30 days
+            alert_cutoff = datetime.now() - timedelta(days=30)
+            cursor.execute("""
+                DELETE FROM alerts 
+                WHERE timestamp < ? AND is_resolved = 1
+            """, (alert_cutoff.isoformat(),))
+            
+            conn.commit()
+            self.logger.info(f"Cleaned up {deleted_count} old raw metrics records")
+            
+            # Vacuum database to reclaim space
+            conn.execute("VACUUM")
+            self.logger.info("Database vacuum completed")
     
     def generate_hourly_stats(self, start_time: Optional[datetime] = None):
         """Generate hourly aggregated statistics."""

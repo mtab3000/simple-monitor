@@ -13,7 +13,8 @@ from typing import Dict, List, Optional
 from flask import Flask, render_template, jsonify, request
 import yaml
 
-from cli_view import load_csv_data, get_latest_data_by_miner
+from .cli_view import load_csv_data, get_latest_data_by_miner
+from .database import BitaxeDatabase
 
 
 class BitaxeWebServer:
@@ -26,6 +27,13 @@ class BitaxeWebServer:
         self.port = port
         self.app = Flask(__name__, template_folder='../web/templates', static_folder='../web/static')
         self.config = self.load_config()
+        
+        # Initialize database connection
+        try:
+            self.db = BitaxeDatabase('data/bitaxe_monitor.db')
+        except Exception as e:
+            print(f"Warning: Could not initialize database: {e}")
+            self.db = None
         
         # Setup routes
         self.setup_routes()
@@ -116,58 +124,60 @@ class BitaxeWebServer:
                 }), 500
     
     def get_current_data(self) -> Dict:
-        """Get current miner data from CSV file."""
-        csv_path = self.config.get('csv_path', 'metrics.csv')
-        
-        if not os.path.exists(csv_path):
-            return {'miners': [], 'message': 'No data available yet'}
-        
+        """Get current miner data from database (database-only mode)."""
         try:
-            # Load and process CSV data
-            csv_data = load_csv_data(csv_path)
-            if not csv_data:
-                return {'miners': [], 'message': 'No data in CSV file'}
-            
-            # Get latest data for each miner
-            latest_data = get_latest_data_by_miner(csv_data)
-            
-            # Convert to web-friendly format
-            miners = []
-            for ip, data in latest_data.items():
-                miner_info = {
-                    'ip': ip,
-                    'hostname': data.get('hostname', f'Miner-{ip.split(".")[-1]}'),
-                    'status': data.get('status', 'unknown'),
-                    'hashrate_ghs': float(data.get('hashrate_ghs', 0)),
-                    'expected_hashrate_ghs': float(data.get('expected_hashrate_ghs', 0)),
-                    'hashrate_ratio_percent': float(data.get('hashrate_ratio_percent', 0)),
-                    'temp_asic_c': float(data.get('temp_asic_c', 0)),
-                    'temp_vr_c': float(data.get('temp_vr_c', 0)),
-                    'power_w': float(data.get('power_w', 0)),
-                    'efficiency_j_th': float(data.get('efficiency_j_th', 0)),
-                    'uptime_hours': float(data.get('uptime_hours', 0)),
-                    'shares_accepted': int(data.get('shares_accepted', 0)),
-                    'shares_rejected': int(data.get('shares_rejected', 0)),
-                    'wifi_rssi': int(data.get('wifi_rssi', 0)),
-                    'timestamp': data.get('timestamp', ''),
-                    'voltage_asic_actual_v': float(data.get('voltage_asic_actual_v', 0)),
-                    'voltage_asic_set_v': float(data.get('voltage_asic_set_v', 0)),
-                    'frequency_set_mhz': float(data.get('frequency_set_mhz', 0)),
-                }
-                
-                # Calculate additional metrics
-                if miner_info['shares_accepted'] + miner_info['shares_rejected'] > 0:
-                    total_shares = miner_info['shares_accepted'] + miner_info['shares_rejected']
-                    miner_info['rejection_rate_percent'] = (miner_info['shares_rejected'] / total_shares) * 100
-                else:
-                    miner_info['rejection_rate_percent'] = 0
-                
-                miners.append(miner_info)
-            
-            return {'miners': miners}
-            
+            return self._get_data_from_database()
         except Exception as e:
-            return {'miners': [], 'error': f'Error processing data: {str(e)}'}
+            return {'miners': [], 'error': f'Database error: {str(e)}'}
+    
+    def _get_data_from_database(self) -> Dict:
+        """Get current data from database as fallback."""
+        try:
+            with self.db.get_connection() as conn:
+                # Get latest record for each miner from the optimized schema
+                query = '''
+                SELECT r.*, m.ip_address, m.hostname 
+                FROM raw_metrics r
+                JOIN miners m ON r.miner_id = m.id
+                WHERE r.timestamp = (
+                    SELECT MAX(timestamp) FROM raw_metrics r2 
+                    WHERE r2.miner_id = r.miner_id
+                )
+                ORDER BY m.ip_address
+                '''
+                cursor = conn.execute(query)
+                rows = cursor.fetchall()
+                
+                miners = []
+                for row in rows:
+                    # New optimized schema mapping
+                    miner_info = {
+                        'ip': row['ip_address'],
+                        'hostname': row['hostname'] if row['hostname'] else f'Miner-{row["ip_address"].split(".")[-1]}',
+                        'status': row['status'],
+                        'hashrate_ghs': float(row['hashrate_ghs']) if row['hashrate_ghs'] else 0,
+                        'expected_hashrate_ghs': float(row['expected_hashrate_ghs']) if row['expected_hashrate_ghs'] else 0,
+                        'hashrate_ratio_percent': float(row['hashrate_ratio_percent']) if row['hashrate_ratio_percent'] else 0,
+                        'temp_asic_c': float(row['temp_asic_c']) if row['temp_asic_c'] else 0,
+                        'temp_vr_c': float(row['temp_vr_c']) if row['temp_vr_c'] else 0,
+                        'power_w': float(row['power_w']) if row['power_w'] else 0,
+                        'efficiency_j_th': float(row['efficiency_j_th']) if row['efficiency_j_th'] else 0,
+                        'uptime_hours': float(row['uptime_hours']) if row['uptime_hours'] else 0,
+                        'shares_accepted': int(row['shares_accepted']) if row['shares_accepted'] else 0,
+                        'shares_rejected': int(row['shares_rejected']) if row['shares_rejected'] else 0,
+                        'rejection_rate_percent': float(row['rejection_rate_percent']) if row['rejection_rate_percent'] else 0,
+                        'wifi_rssi': int(row['wifi_rssi']) if row['wifi_rssi'] else 0,
+                        'timestamp': row['timestamp'],
+                        'voltage_asic_actual_v': float(row['voltage_asic_actual_v']) if row['voltage_asic_actual_v'] else 0,
+                        'voltage_asic_set_v': float(row['voltage_asic_set_v']) if row['voltage_asic_set_v'] else 0,
+                        'frequency_set_mhz': float(row['frequency_set_mhz']) if row['frequency_set_mhz'] else 0,
+                    }
+                    
+                    miners.append(miner_info)
+                
+                return {'miners': miners}
+        except Exception as e:
+            raise Exception(f'Database query failed: {str(e)}')
     
     def get_historical_data(self, hours: int = 24) -> Dict:
         """Get historical data for the specified number of hours."""
@@ -266,16 +276,16 @@ class BitaxeWebServer:
     
     def run(self, debug: bool = False):
         """Start the web server."""
-        print(f"🌐 Starting Bitaxe Web Dashboard at http://{self.host}:{self.port}")
-        print(f"📊 Monitoring {len(self.config.get('miners', []))} miners")
-        print(f"📁 Data source: {self.config.get('csv_path', 'metrics.csv')}")
+        print(f"Starting Bitaxe Web Dashboard at http://{self.host}:{self.port}")
+        print(f"Monitoring {len(self.config.get('miners', []))} miners")
+        print(f"Data source: database")
         
         try:
             self.app.run(host=self.host, port=self.port, debug=debug)
         except KeyboardInterrupt:
-            print("\n👋 Shutting down web server...")
+            print("\nShutting down web server...")
         except Exception as e:
-            print(f"❌ Error starting web server: {e}")
+            print(f"Error starting web server: {e}")
 
 
 def main():

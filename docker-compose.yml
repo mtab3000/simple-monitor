@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # Basic monitoring (legacy - use for minimal setups only)
@@ -54,7 +53,7 @@ services:
       - "80:80"
     volumes:
       - ./config.yaml:/app/config.yaml:ro
-      - bitaxe-data:/app/data:ro
+      - bitaxe-data:/app/data
       - ./metrics.csv:/app/metrics.csv:ro
       - ./hostname_cache.json:/app/hostname_cache.json:ro
       - ./web:/app/web:ro
