@@ -128,12 +128,23 @@ PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-cha
 
 3. **Start with Docker Compose:**
    ```bash
+   # Basic monitoring
    docker-compose up -d
+   
+   # Web dashboard (recommended)
+   docker-compose --profile web up -d
+   
+   # Enhanced monitoring with analytics
+   docker-compose --profile enhanced up -d
    ```
 
-4. **View the monitoring dashboard:**
+4. **Access your dashboard:**
    ```bash
+   # Terminal dashboard
    docker-compose exec bitaxe-monitor python viewer.py --live
+   
+   # Web dashboard (if using --profile web)
+   # Open http://localhost:8080 in your browser
    ```
 
 ### Manual Installation
@@ -272,24 +283,49 @@ python src/optimization_analyzer.py --csv-path custom_metrics.csv --hours 72 --s
 ```
 ### Docker Commands
 
-**Start monitoring in background:**
+**Basic monitoring (default):**
 ```bash
 docker-compose up -d
 ```
 
-**View live dashboard:**
+**Enhanced monitoring with database analytics:**
+```bash
+docker-compose --profile enhanced up -d
+```
+
+**Web dashboard (recommended):**
+```bash
+docker-compose --profile web up -d
+# Access at http://localhost:8080
+```
+
+**All services together:**
+```bash
+docker-compose --profile enhanced --profile web up -d
+```
+
+**View live terminal dashboard:**
 ```bash
 docker-compose exec bitaxe-monitor python viewer.py --live
 ```
 
 **Check logs:**
 ```bash
+# Basic monitoring
 docker-compose logs -f bitaxe-monitor
+
+# Enhanced monitoring  
+docker-compose logs -f bitaxe-enhanced
+
+# Web dashboard
+docker-compose logs -f bitaxe-web
 ```
 
-**Stop monitoring:**
+**Stop services:**
 ```bash
 docker-compose down
+# or with profiles:
+docker-compose --profile enhanced --profile web down
 ```
 
 ## 📊 Dashboard Features
