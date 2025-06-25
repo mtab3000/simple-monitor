@@ -123,11 +123,13 @@ class MiningOptimizationAnalyzer:
         # Filter by miner if specified
         if miner_ip:
             df = df[df['miner_ip'] == miner_ip]
+            # For miner-specific analysis, group by settings only
+            setting_groups = df.groupby(['voltage_asic_set_v', 'frequency_set_mhz'])
+        else:
+            # For fleet analysis, group by miner and settings
+            setting_groups = df.groupby(['miner_ip', 'voltage_asic_set_v', 'frequency_set_mhz'])
         
         results = {}
-        
-        # Group by voltage and frequency settings
-        setting_groups = df.groupby(['miner_ip', 'voltage_asic_set_v', 'frequency_set_mhz'])
         
         for (miner, voltage, frequency), group in setting_groups:
             if len(group) < self.min_samples_per_setting:
@@ -188,8 +190,8 @@ class MiningOptimizationAnalyzer:
             
             results[setting_key] = {
                 'miner_ip': miner,
-                'voltage': voltage,
-                'frequency': frequency,
+                'voltage': float(voltage),
+                'frequency': float(frequency),
                 'samples': len(group),
                 'duration_hours': (group['timestamp'].max() - group['timestamp'].min()).total_seconds() / 3600,
                 'hashrate': hashrate_stats,
@@ -199,7 +201,8 @@ class MiningOptimizationAnalyzer:
                 'stability_score': float(stability_score),
                 'performance_score': float(performance_score),
                 'sweet_spot_score': float(sweet_spot_score),
-                'rejection_rate': float(group['shares_rejected'].sum() / (group['shares_accepted'].sum() + group['shares_rejected'].sum()) * 100) if (group['shares_accepted'].sum() + group['shares_rejected'].sum()) > 0 else 0
+                'rejection_rate': float(group['shares_rejected'].sum() / (group['shares_accepted'].sum() + group['shares_rejected'].sum()) * 100) if (group['shares_accepted'].sum() + group['shares_rejected'].sum()) > 0 else 0,
+                'analysis_type': 'miner_specific' if miner_ip else 'fleet'
             }
         
         return results
@@ -217,6 +220,52 @@ class MiningOptimizationAnalyzer:
         )
         
         return sorted_settings[:top_n]
+    
+    def generate_fleet_summary(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Generate fleet-wide optimization summary."""
+        if df.empty:
+            return {}
+        
+        fleet_summary = {
+            'total_miners': len(df['miner_ip'].unique()),
+            'miners': {},
+            'fleet_optimal_settings': {},
+            'fleet_performance_stats': {}
+        }
+        
+        # Analyze each miner individually
+        for miner_ip in df['miner_ip'].unique():
+            miner_data = df[df['miner_ip'] == miner_ip]
+            miner_performance = self.analyze_setting_performance(miner_data, miner_ip)
+            miner_optimal = self.find_optimal_settings(miner_performance, top_n=3)
+            
+            fleet_summary['miners'][miner_ip] = {
+                'settings_tested': len(miner_performance),
+                'optimal_settings': miner_optimal,
+                'best_performance': miner_optimal[0] if miner_optimal else None,
+                'analysis_period': {
+                    'samples': len(miner_data),
+                    'duration_hours': (miner_data['timestamp'].max() - miner_data['timestamp'].min()).total_seconds() / 3600
+                }
+            }
+        
+        # Find fleet-wide optimal settings (settings that work well across multiple miners)
+        all_settings = df.groupby(['voltage_asic_set_v', 'frequency_set_mhz'])
+        for (voltage, frequency), group in all_settings:
+            miners_with_setting = group['miner_ip'].nunique()
+            if miners_with_setting >= 2:  # Setting tested on at least 2 miners
+                fleet_performance = self.analyze_setting_performance(group)
+                if fleet_performance:
+                    avg_sweet_spot = sum(p['sweet_spot_score'] for p in fleet_performance.values()) / len(fleet_performance)
+                    fleet_summary['fleet_optimal_settings'][f"{voltage:.3f}V_{frequency:.0f}MHz"] = {
+                        'voltage': float(voltage),
+                        'frequency': float(frequency),
+                        'miners_tested': miners_with_setting,
+                        'average_sweet_spot_score': float(avg_sweet_spot),
+                        'individual_results': fleet_performance
+                    }
+        
+        return fleet_summary
     
     def analyze_stability_over_time(self, df: pd.DataFrame, voltage: float, frequency: float, miner_ip: str) -> Dict[str, Any]:
         """Analyze how hashrate and efficiency stability changes over time for a specific setting."""
@@ -281,38 +330,98 @@ class MiningOptimizationAnalyzer:
     
     def generate_optimization_report(self, miner_ip: str = None, hours: int = 24) -> Dict[str, Any]:
         """Generate comprehensive optimization report."""
-        self.logger.info(f"Generating optimization report for last {hours} hours")
+        if miner_ip:
+            return self._generate_miner_specific_report(miner_ip, hours)
+        else:
+            return self._generate_fleet_report(hours)
+    
+    def _generate_miner_specific_report(self, miner_ip: str, hours: int = 24) -> Dict[str, Any]:
+        """Generate detailed report for a specific miner."""
+        self.logger.info(f"Generating miner-specific optimization report for {miner_ip} (last {hours} hours)")
         
         # Load data
         df = self.load_and_preprocess_data(hours)
         if df.empty:
             return {'error': 'No data available for analysis'}
         
-        # Analyze performance for each setting
-        performance_data = self.analyze_setting_performance(df, miner_ip)
+        # Filter for specific miner
+        miner_df = df[df['miner_ip'] == miner_ip]
+        if miner_df.empty:
+            return {'error': f'No data available for miner {miner_ip}'}
+        
+        # Analyze performance for this specific miner
+        performance_data = self.analyze_setting_performance(miner_df, miner_ip)
         
         # Find optimal settings
         optimal_settings = self.find_optimal_settings(performance_data)
         
-        # Detect benchmark sessions
-        benchmark_sessions = self.detect_benchmark_sessions(df)
+        # Detect benchmark sessions for this miner
+        benchmark_sessions = self.detect_benchmark_sessions(miner_df)
         
-        # Generate recommendations
+        # Generate miner-specific recommendations
         recommendations = self._generate_recommendations(optimal_settings, performance_data)
         
         report = {
+            'analysis_type': 'miner_specific',
+            'miner_ip': miner_ip,
             'analysis_period': {
                 'hours': hours,
-                'start_time': df['timestamp'].min().isoformat() if not df.empty else None,
-                'end_time': df['timestamp'].max().isoformat() if not df.empty else None,
-                'total_samples': len(df)
+                'start_time': miner_df['timestamp'].min().isoformat(),
+                'end_time': miner_df['timestamp'].max().isoformat(),
+                'total_samples': len(miner_df)
             },
-            'miners_analyzed': list(df['miner_ip'].unique()) if not df.empty else [],
             'settings_tested': len(performance_data),
             'benchmark_sessions': benchmark_sessions,
             'optimal_settings': optimal_settings,
             'all_settings_performance': performance_data,
             'recommendations': recommendations,
+            'miner_stats': {
+                'current_performance': self._get_current_performance(miner_df),
+                'performance_trend': self._analyze_performance_trend(miner_df),
+                'stability_analysis': self._analyze_overall_stability(miner_df)
+            },
+            'generated_at': datetime.now().isoformat()
+        }
+        
+        return report
+    
+    def _generate_fleet_report(self, hours: int = 24) -> Dict[str, Any]:
+        """Generate fleet-wide optimization summary."""
+        self.logger.info(f"Generating fleet optimization report (last {hours} hours)")
+        
+        # Load data
+        df = self.load_and_preprocess_data(hours)
+        if df.empty:
+            return {'error': 'No data available for analysis'}
+        
+        # Generate fleet summary
+        fleet_summary = self.generate_fleet_summary(df)
+        
+        # Detect fleet-wide benchmark sessions
+        benchmark_sessions = self.detect_benchmark_sessions(df)
+        
+        # Find settings that work well across the fleet
+        fleet_optimal = []
+        if fleet_summary.get('fleet_optimal_settings'):
+            fleet_optimal = sorted(
+                fleet_summary['fleet_optimal_settings'].values(),
+                key=lambda x: x['average_sweet_spot_score'],
+                reverse=True
+            )[:5]
+        
+        report = {
+            'analysis_type': 'fleet',
+            'analysis_period': {
+                'hours': hours,
+                'start_time': df['timestamp'].min().isoformat(),
+                'end_time': df['timestamp'].max().isoformat(),
+                'total_samples': len(df)
+            },
+            'fleet_summary': fleet_summary,
+            'benchmark_sessions': benchmark_sessions,
+            'fleet_optimal_settings': fleet_optimal,
+            'miner_comparisons': self._generate_miner_comparisons(df),
+            'fleet_recommendations': self._generate_fleet_recommendations(fleet_summary),
             'generated_at': datetime.now().isoformat()
         }
         
@@ -377,6 +486,112 @@ class MiningOptimizationAnalyzer:
         except Exception as e:
             self.logger.error(f"Error exporting results: {e}")
     
+    def _get_current_performance(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Get current performance metrics for a miner."""
+        if df.empty:
+            return {}
+        
+        # Get most recent data
+        recent_data = df.sort_values('timestamp').tail(10)  # Last 10 measurements
+        
+        return {
+            'current_hashrate': float(recent_data['hashrate_ghs'].mean()),
+            'current_efficiency': float(recent_data['efficiency_j_th'].mean()),
+            'current_temperature': float(recent_data['temp_asic_c'].mean()),
+            'current_voltage': float(recent_data['voltage_asic_set_v'].iloc[-1]),
+            'current_frequency': float(recent_data['frequency_set_mhz'].iloc[-1])
+        }
+    
+    def _analyze_performance_trend(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze performance trend over time."""
+        if len(df) < 20:
+            return {'trend': 'insufficient_data'}
+        
+        # Sort by timestamp
+        df_sorted = df.sort_values('timestamp')
+        
+        # Calculate trend for hashrate and efficiency
+        x = np.arange(len(df_sorted))
+        hashrate_slope = np.polyfit(x, df_sorted['hashrate_ghs'].values, 1)[0]
+        efficiency_slope = np.polyfit(x, df_sorted['efficiency_j_th'].values, 1)[0]
+        
+        return {
+            'hashrate_trend': 'improving' if hashrate_slope > 0.1 else 'degrading' if hashrate_slope < -0.1 else 'stable',
+            'efficiency_trend': 'improving' if efficiency_slope < -0.01 else 'degrading' if efficiency_slope > 0.01 else 'stable',
+            'samples_analyzed': len(df_sorted)
+        }
+    
+    def _analyze_overall_stability(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze overall stability metrics for a miner."""
+        if df.empty:
+            return {}
+        
+        hashrate_cv = df['hashrate_ghs'].std() / df['hashrate_ghs'].mean() * 100
+        temp_std = df['temp_asic_c'].std()
+        efficiency_std = df['efficiency_j_th'].std()
+        
+        # Overall stability score
+        stability_score = hashrate_cv * 0.5 + temp_std * 0.3 + efficiency_std * 0.2
+        
+        return {
+            'hashrate_cv_percent': float(hashrate_cv),
+            'temperature_std': float(temp_std),
+            'efficiency_std': float(efficiency_std),
+            'overall_stability_score': float(stability_score),
+            'stability_rating': 'excellent' if stability_score < 5 else 'good' if stability_score < 10 else 'poor'
+        }
+    
+    def _generate_miner_comparisons(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Generate comparisons between miners in the fleet."""
+        comparisons = {}
+        
+        for miner_ip in df['miner_ip'].unique():
+            miner_data = df[df['miner_ip'] == miner_ip]
+            comparisons[miner_ip] = {
+                'average_hashrate': float(miner_data['hashrate_ghs'].mean()),
+                'average_efficiency': float(miner_data['efficiency_j_th'].mean()),
+                'average_temperature': float(miner_data['temp_asic_c'].mean()),
+                'stability_score': float(miner_data['hashrate_ghs'].std() / miner_data['hashrate_ghs'].mean() * 100),
+                'settings_tested': len(miner_data.groupby(['voltage_asic_set_v', 'frequency_set_mhz'])),
+                'samples': len(miner_data)
+            }
+        
+        return comparisons
+    
+    def _generate_fleet_recommendations(self, fleet_summary: Dict[str, Any]) -> List[str]:
+        """Generate fleet-wide recommendations."""
+        recommendations = []
+        
+        if not fleet_summary:
+            return ['Insufficient data for fleet recommendations']
+        
+        # Analyze fleet performance
+        miners = fleet_summary.get('miners', {})
+        if len(miners) > 1:
+            best_performers = sorted(
+                miners.items(),
+                key=lambda x: x[1]['best_performance']['sweet_spot_score'] if x[1]['best_performance'] else 0,
+                reverse=True
+            )
+            
+            if best_performers:
+                best_miner, best_data = best_performers[0]
+                recommendations.append(f"Best performing miner: {best_miner} with sweet spot score {best_data['best_performance']['sweet_spot_score']:.2f}")
+                
+                if best_data['best_performance']:
+                    voltage = best_data['best_performance']['voltage']
+                    frequency = best_data['best_performance']['frequency']
+                    recommendations.append(f"Consider applying {voltage:.3f}V @ {frequency:.0f}MHz to other miners")
+        
+        # Fleet optimization recommendations
+        fleet_settings = fleet_summary.get('fleet_optimal_settings', {})
+        if fleet_settings:
+            best_fleet_setting = max(fleet_settings.values(), key=lambda x: x['average_sweet_spot_score'])
+            recommendations.append(f"Fleet-wide optimal setting: {best_fleet_setting['voltage']:.3f}V @ {best_fleet_setting['frequency']:.0f}MHz")
+            recommendations.append(f"This setting tested on {best_fleet_setting['miners_tested']} miners with avg score {best_fleet_setting['average_sweet_spot_score']:.2f}")
+        
+        return recommendations
+    
     def create_settings_comparison_chart(self, performance_data: Dict[str, Any]) -> str:
         """Create a text-based comparison chart of different settings."""
         if not performance_data:
@@ -417,7 +632,8 @@ def main():
     
     parser = argparse.ArgumentParser(description='Mining Optimization Analyzer')
     parser.add_argument('--csv-path', default='metrics.csv', help='Path to CSV data file')
-    parser.add_argument('--miner-ip', help='Analyze specific miner IP')
+    parser.add_argument('--miner-ip', help='Analyze specific miner IP (for miner-specific analysis)')
+    parser.add_argument('--fleet', action='store_true', help='Perform fleet-wide analysis (default when no miner-ip specified)')
     parser.add_argument('--hours', type=int, default=24, help='Analysis time window in hours')
     parser.add_argument('--output', default='optimization_analysis.json', help='Output file path')
     parser.add_argument('--show-chart', action='store_true', help='Show comparison chart')
@@ -435,7 +651,9 @@ def main():
     print(f"   Time window: {args.hours} hours")
     print(f"   Data source: {args.csv_path}")
     if args.miner_ip:
-        print(f"   Miner filter: {args.miner_ip}")
+        print(f"   Analysis type: Miner-specific ({args.miner_ip})")
+    else:
+        print(f"   Analysis type: Fleet-wide summary")
     
     report = analyzer.generate_optimization_report(args.miner_ip, args.hours)
     
@@ -443,30 +661,98 @@ def main():
         print(f"❌ Error: {report['error']}")
         return
     
-    # Display summary
-    print(f"\n📈 ANALYSIS SUMMARY")
-    print(f"   Miners analyzed: {len(report['miners_analyzed'])}")
-    print(f"   Settings tested: {report['settings_tested']}")
-    print(f"   Benchmark sessions: {len(report['benchmark_sessions'])}")
-    print(f"   Optimal settings found: {len(report['optimal_settings'])}")
+    # Display summary based on analysis type
+    analysis_type = report.get('analysis_type', 'unknown')
     
-    # Show top recommendations
-    if report['recommendations']:
-        print(f"\n💡 RECOMMENDATIONS:")
-        for i, rec in enumerate(report['recommendations'], 1):
+    if analysis_type == 'miner_specific':
+        print(f"\n📈 MINER-SPECIFIC ANALYSIS SUMMARY ({report['miner_ip']})")
+        print(f"   Settings tested: {report['settings_tested']}")
+        print(f"   Benchmark sessions: {len(report['benchmark_sessions'])}")
+        print(f"   Optimal settings found: {len(report['optimal_settings'])}")
+        
+        # Show current performance
+        current = report.get('miner_stats', {}).get('current_performance', {})
+        if current:
+            print(f"\n🎯 CURRENT PERFORMANCE")
+            print(f"   Hashrate: {current.get('current_hashrate', 0):.1f} GH/s")
+            print(f"   Efficiency: {current.get('current_efficiency', 0):.1f} J/TH")
+            print(f"   Temperature: {current.get('current_temperature', 0):.1f}°C")
+            print(f"   Settings: {current.get('current_voltage', 0):.3f}V @ {current.get('current_frequency', 0):.0f}MHz")
+    
+    elif analysis_type == 'fleet':
+        fleet_summary = report.get('fleet_summary', {})
+        print(f"\n📈 FLEET ANALYSIS SUMMARY")
+        print(f"   Total miners: {fleet_summary.get('total_miners', 0)}")
+        print(f"   Fleet-wide settings: {len(report.get('fleet_optimal_settings', []))}")
+        print(f"   Benchmark sessions: {len(report['benchmark_sessions'])}")
+        
+        # Show miner comparison
+        comparisons = report.get('miner_comparisons', {})
+        if comparisons:
+            print(f"\n🏆 MINER PERFORMANCE RANKING")
+            ranked_miners = sorted(
+                comparisons.items(),
+                key=lambda x: x[1]['average_hashrate'],
+                reverse=True
+            )
+            for i, (miner_ip, stats) in enumerate(ranked_miners[:3], 1):
+                print(f"   {i}. {miner_ip}: {stats['average_hashrate']:.1f} GH/s, {stats['average_efficiency']:.1f} J/TH")
+    
+    else:
+        # Fallback for legacy format
+        miners_analyzed = report.get('miners_analyzed', [])
+        print(f"\n📈 ANALYSIS SUMMARY")
+        print(f"   Miners analyzed: {len(miners_analyzed)}")
+        print(f"   Settings tested: {report.get('settings_tested', 0)}")
+        print(f"   Benchmark sessions: {len(report.get('benchmark_sessions', []))}")
+        print(f"   Optimal settings found: {len(report.get('optimal_settings', []))}")
+    
+    # Show recommendations based on analysis type
+    recommendations = report.get('recommendations', []) or report.get('fleet_recommendations', [])
+    if recommendations:
+        recommendation_title = "💡 MINER RECOMMENDATIONS" if analysis_type == 'miner_specific' else "💡 FLEET RECOMMENDATIONS"
+        print(f"\n{recommendation_title}:")
+        for i, rec in enumerate(recommendations, 1):
             print(f"   {i}. {rec}")
     
-    # Show top settings
-    if report['optimal_settings']:
-        print(f"\n🏆 TOP OPTIMAL SETTINGS:")
-        for i, setting in enumerate(report['optimal_settings'][:3], 1):
-            print(f"   {i}. {setting['voltage']:.3f}V @ {setting['frequency']:.0f}MHz")
-            print(f"      Score: {setting['sweet_spot_score']:.2f}, Hashrate: {setting['hashrate']['mean']:.1f} GH/s")
-            print(f"      Stability: {setting['stability_score']:.1f}, Efficiency: {setting['efficiency']['mean']:.1f} J/TH")
+    # Show optimal settings based on analysis type
+    if analysis_type == 'miner_specific':
+        optimal_settings = report.get('optimal_settings', [])
+        if optimal_settings:
+            print(f"\n🏆 TOP OPTIMAL SETTINGS FOR {report['miner_ip']}:")
+            for i, setting in enumerate(optimal_settings[:3], 1):
+                print(f"   {i}. {setting['voltage']:.3f}V @ {setting['frequency']:.0f}MHz")
+                print(f"      Score: {setting['sweet_spot_score']:.2f}, Hashrate: {setting['hashrate']['mean']:.1f} GH/s")
+                print(f"      Stability: {setting['stability_score']:.1f}, Efficiency: {setting['efficiency']['mean']:.1f} J/TH")
+    
+    elif analysis_type == 'fleet':
+        fleet_optimal = report.get('fleet_optimal_settings', [])
+        if fleet_optimal:
+            print(f"\n🏆 TOP FLEET-WIDE OPTIMAL SETTINGS:")
+            for i, setting in enumerate(fleet_optimal[:3], 1):
+                print(f"   {i}. {setting['voltage']:.3f}V @ {setting['frequency']:.0f}MHz")
+                print(f"      Miners tested: {setting['miners_tested']}, Avg score: {setting['average_sweet_spot_score']:.2f}")
+    
+    else:
+        # Fallback for legacy format
+        optimal_settings = report.get('optimal_settings', [])
+        if optimal_settings:
+            print(f"\n🏆 TOP OPTIMAL SETTINGS:")
+            for i, setting in enumerate(optimal_settings[:3], 1):
+                print(f"   {i}. {setting['voltage']:.3f}V @ {setting['frequency']:.0f}MHz")
+                print(f"      Score: {setting['sweet_spot_score']:.2f}, Hashrate: {setting['hashrate']['mean']:.1f} GH/s")
+                print(f"      Stability: {setting['stability_score']:.1f}, Efficiency: {setting['efficiency']['mean']:.1f} J/TH")
     
     # Show comparison chart
-    if args.show_chart and report['all_settings_performance']:
-        chart = analyzer.create_settings_comparison_chart(report['all_settings_performance'])
+    chart_data = report.get('all_settings_performance')
+    if not chart_data and analysis_type == 'fleet':
+        # For fleet analysis, try to get chart data from fleet summary
+        fleet_summary = report.get('fleet_summary', {})
+        if fleet_summary.get('fleet_optimal_settings'):
+            chart_data = fleet_summary['fleet_optimal_settings']
+    
+    if args.show_chart and chart_data:
+        chart = analyzer.create_settings_comparison_chart(chart_data)
         print(chart)
     
     # Export results

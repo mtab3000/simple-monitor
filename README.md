@@ -268,36 +268,37 @@ python web_dashboard.py --host 0.0.0.0 --port 80
 
 ### Mining Optimization Analysis
 
-**Analyze voltage/frequency combinations for sweet spots:**
+**Miner-Specific vs Fleet Analysis:**
 ```bash
-# Analyze voltage/frequency combinations for sweet spots
-python src/optimization_analyzer.py --hours 24 --show-chart
+# 🎯 Miner-specific optimization (replace with your IP)
+python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 48 --show-chart
 
-# Analyze specific miner performance
-python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 48
+# 🏢 Fleet-wide optimization analysis
+python src/optimization_analyzer.py --fleet --hours 72 --show-chart
 
-# Export detailed analysis results  
-python src/optimization_analyzer.py --hours 168 --output weekly_optimization.json
+# 📈 Comprehensive analysis with export
+python src/optimization_analyzer.py --hours 168 --output weekly_analysis.json
 
-# Custom CSV path and time window
-python src/optimization_analyzer.py --csv-path custom_metrics.csv --hours 72 --show-chart
+# 🔄 Real-time monitoring (specific miner)
+watch -n 1800 'python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 6'
 ```
 
 ### 🎯 **Advanced Optimization Analysis**
 
-**Comprehensive sweet spot detection:**
+**Advanced optimization workflows:**
 ```bash
-# 📈 Weekly optimization analysis with detailed reporting
-python src/optimization_analyzer.py --hours 168 --show-chart --output weekly_analysis.json
+# 📈 Individual miner deep-dive analysis
+python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 168 --show-chart
 
-# 🎯 Miner-specific optimization (replace IP)
-python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 48 --detailed
+# 🏢 Fleet optimization with performance ranking
+python src/optimization_analyzer.py --fleet --hours 72 --output fleet_report.json
 
-# 📉 Performance comparison across fleet
-python src/optimization_analyzer.py --hours 72 --compare-miners --export-csv
+# 📉 Multi-timeframe comparison
+python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 24 --show-chart
+python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 168 --show-chart
 
-# 🔥 Real-time optimization monitoring
-watch -n 300 'python src/optimization_analyzer.py --hours 6 --quick-summary'
+# 🔥 Continuous fleet monitoring
+watch -n 3600 'python src/optimization_analyzer.py --fleet --hours 12'
 ```
 
 **Understanding the analysis:**
