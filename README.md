@@ -30,10 +30,13 @@ A beautiful, real-time monitoring solution for Bitaxe Gamma mining devices with 
 
 ### 🎯 **Mining Optimization**
 - **Voltage/frequency optimization** analysis for sweet spot identification
-- **Benchmarking session detection** for automatic testing periods
+- **Benchmarking session detection** for automatic testing periods  
 - **Stability scoring** using coefficient of variation analysis
 - **Performance rankings** with comprehensive comparison charts
 - **Actionable recommendations** for optimal mining settings
+- **Statistical analysis** of hashrate, efficiency, and temperature metrics
+- **Sweet spot scoring** algorithm balancing performance vs stability
+- **JSON export** for detailed analysis and historical tracking
 
 ### 🎨 **Beautiful Interface**
 - **Unicode icons** and color-coded status indicators
@@ -153,8 +156,11 @@ python src/optimization_analyzer.py --hours 24 --show-chart
 # Analyze specific miner performance
 python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 48
 
-# Export detailed analysis results
+# Export detailed analysis results  
 python src/optimization_analyzer.py --hours 168 --output weekly_optimization.json
+
+# Custom CSV path and time window
+python src/optimization_analyzer.py --csv-path custom_metrics.csv --hours 72 --show-chart
 ```
 
 ### Docker Commands
@@ -273,6 +279,58 @@ codeql database analyze
 - **CodeQL:** Security analysis runs weekly and on push
 - **Test Coverage:** Minimum 80% coverage enforced
 
+## 🔧 Mining Optimization Analyzer
+
+The Mining Optimization Analyzer is a powerful tool for identifying optimal voltage/frequency combinations to maximize mining efficiency and stability.
+
+### Key Features
+
+- **Sweet Spot Detection**: Identifies optimal voltage/frequency combinations that balance performance and stability
+- **Benchmark Analysis**: Automatically detects when miners test multiple settings and analyzes results
+- **Stability Scoring**: Uses coefficient of variation to measure hashrate consistency
+- **Performance Metrics**: Comprehensive analysis of hashrate, efficiency, temperature, and power consumption
+- **Actionable Recommendations**: Provides specific guidance for improving mining performance
+
+### Sweet Spot Algorithm
+
+The analyzer uses a sophisticated scoring algorithm that combines:
+
+1. **Performance Score** (higher is better):
+   - Hashrate (40% weight) - Higher average hashrate preferred
+   - Efficiency (30% weight) - Lower J/TH preferred (normalized to 20J baseline)
+   - Temperature (20% weight) - Lower temps preferred (normalized to 90°C baseline)  
+   - Power efficiency (10% weight) - Higher hashrate per watt preferred
+
+2. **Stability Score** (lower is better):
+   - Hashrate coefficient of variation (50% weight)
+   - Temperature standard deviation (30% weight)
+   - Efficiency standard deviation (20% weight)
+
+3. **Sweet Spot Score**: `Performance Score / (1 + Stability Score / 100)`
+
+### Analysis Output
+
+The tool provides:
+- **Ranked settings** by sweet spot score
+- **Statistical metrics** for each voltage/frequency combination
+- **Visual comparison charts** in text format
+- **Specific recommendations** for voltage/frequency ranges
+- **Benchmark session detection** with detailed settings analysis
+- **JSON export** for detailed analysis and integration
+
+### Usage Examples
+
+```bash
+# Basic analysis with comparison chart
+PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-chart
+
+# Weekly analysis for specific miner
+python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 168 --output miner_analysis.json
+
+# Custom data source analysis
+python src/optimization_analyzer.py --csv-path backup_metrics.csv --hours 48
+```
+
 ### File Structure
 ```
 simple-monitor/
@@ -282,11 +340,13 @@ simple-monitor/
 │       └── codeql.yml   # Security analysis
 ├── src/
 │   ├── collector.py      # Data collection and CSV handling
-│   └── cli_view.py       # Dashboard and visualization
+│   ├── cli_view.py       # Dashboard and visualization
+│   └── optimization_analyzer.py # Mining optimization analysis
 ├── tests/
 │   ├── __init__.py      # Test package initialization
 │   ├── test_collector.py # Unit tests for collector
-│   └── test_cli_view.py # Unit tests for CLI viewer
+│   ├── test_cli_view.py # Unit tests for CLI viewer
+│   └── test_optimization_analyzer.py # Tests for optimization analyzer
 ├── examples/
 │   └── config.example.yaml # Example configuration
 ├── data/                 # Runtime data directory
