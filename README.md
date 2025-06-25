@@ -28,6 +28,13 @@ A beautiful, real-time monitoring solution for Bitaxe Gamma mining devices with 
 - **System status** (fan speed, memory, uptime)
 - **Mining statistics** (shares accepted/rejected, rejection rate)
 
+### 🎯 **Mining Optimization**
+- **Voltage/frequency optimization** analysis for sweet spot identification
+- **Benchmarking session detection** for automatic testing periods
+- **Stability scoring** using coefficient of variation analysis
+- **Performance rankings** with comprehensive comparison charts
+- **Actionable recommendations** for optimal mining settings
+
 ### 🎨 **Beautiful Interface**
 - **Unicode icons** and color-coded status indicators
 - **Progress bars** for visual performance assessment
@@ -136,6 +143,18 @@ python viewer.py --summary
 **Static Detailed Summary:**
 ```bash
 python viewer.py --summary --detailed
+```
+
+**Mining Optimization Analysis:**
+```bash
+# Analyze voltage/frequency combinations for sweet spots
+python src/optimization_analyzer.py --hours 24 --show-chart
+
+# Analyze specific miner performance
+python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 48
+
+# Export detailed analysis results
+python src/optimization_analyzer.py --hours 168 --output weekly_optimization.json
 ```
 
 ### Docker Commands
