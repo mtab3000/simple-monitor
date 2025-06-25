@@ -266,6 +266,11 @@ pytest
 pytest -m unit          # Unit tests only
 pytest -m integration   # Integration tests only
 
+# Run specific modules
+pytest tests/test_database.py     # Database tests
+pytest tests/test_analytics.py    # Analytics tests
+pytest tests/test_web_server.py   # Web server tests
+
 # Generate HTML coverage report
 pytest --cov-report=html
 ```
@@ -303,7 +308,10 @@ simple-monitor/
 ├── tests/
 │   ├── __init__.py      # Test package initialization
 │   ├── test_collector.py # Unit tests for collector
-│   └── test_cli_view.py # Unit tests for CLI viewer
+│   ├── test_cli_view.py # Unit tests for CLI viewer
+│   ├── test_database.py # Unit tests for database module
+│   ├── test_analytics.py # Unit tests for analytics module
+│   └── test_web_server.py # Unit tests for web server module
 ├── examples/
 │   └── config.example.yaml # Example configuration
 ├── data/                 # Runtime data directory
