@@ -241,7 +241,7 @@ class PerformanceAnalyzer:
             daily_data = cursor.fetchall()
             
             if len(daily_data) < 7:
-                return {'trend': 'insufficient_data', 'metrics': {}}
+                return {'trend': 'insufficient_data', 'metrics': {}, 'period_days': days}
             
             # Calculate trends using linear regression
             dates = [(datetime.strptime(row['date'], '%Y-%m-%d') - datetime.strptime(daily_data[0]['date'], '%Y-%m-%d')).days for row in daily_data]
