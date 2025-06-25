@@ -7,7 +7,7 @@ A **beautiful, real-time monitoring solution** for Bitaxe Gamma mining devices w
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/tests-65%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-146%20passing-brightgreen.svg)](tests/)
 [![Code Quality](https://img.shields.io/badge/code%20quality-pylint-yellow.svg)](.pylintrc)
 [![Security](https://img.shields.io/badge/security-CodeQL-purple.svg)](.github/workflows/codeql.yml)
 [![Mining Optimization](https://img.shields.io/badge/optimization-sweet%20spot%20analysis-orange.svg)](src/optimization_analyzer.py)
@@ -79,7 +79,9 @@ A **beautiful, real-time monitoring solution** for Bitaxe Gamma mining devices w
 
 ### 🏗️ **Enterprise Ready**
 - 🐳 **Docker containerization** with docker-compose orchestration
-- 🧪 **Comprehensive test suite** with 65+ tests and high coverage
+- 🗄️ **Advanced database system** with SQLite for performance analytics
+- 🔮 **Predictive analytics** with anomaly detection and maintenance alerts
+- 🧪 **Comprehensive test suite** with 146+ tests and high coverage
 - 🔄 **CI/CD pipeline** with automated code quality checks
 - 🔒 **Security analysis** with CodeQL integration
 - 💾 **Persistent data storage** with automatic backups
@@ -153,7 +155,11 @@ PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-cha
 
 4. **View the dashboard:**
    ```bash
+   # Basic monitoring
    python viewer.py --live
+   
+   # Enhanced monitoring with database and analytics
+   python enhanced_monitor.py
    ```
 
 ## 📖 Usage
@@ -200,7 +206,33 @@ python viewer.py --summary
 python viewer.py --summary --detailed
 ```
 
-**Mining Optimization Analysis:**
+### Enhanced Monitoring with Database & Analytics
+
+**Start enhanced monitoring:**
+```bash
+python enhanced_monitor.py
+```
+
+**Database migration from CSV:**
+```bash
+python src/data_migration.py --action migrate
+```
+
+**Enhanced Features:**
+- **SQLite database** for advanced data storage and analysis
+- **Performance scoring** with A+ to F grades based on multiple factors
+- **Anomaly detection** using statistical analysis
+- **Predictive maintenance** alerts based on performance trends
+- **Growth metrics** with trend analysis over time
+- **Fleet analytics** with comparative performance insights
+- **Automated alerts** for temperature, hashrate, and efficiency issues
+- **Historical analysis** with hourly and daily aggregations
+
+**See [Database & Analytics Documentation](docs/DATABASE_ANALYTICS.md) for detailed information.**
+
+### Mining Optimization Analysis
+
+**Analyze voltage/frequency combinations for sweet spots:**
 ```bash
 # Analyze voltage/frequency combinations for sweet spots
 python src/optimization_analyzer.py --hours 24 --show-chart
@@ -214,7 +246,6 @@ python src/optimization_analyzer.py --hours 168 --output weekly_optimization.jso
 # Custom CSV path and time window
 python src/optimization_analyzer.py --csv-path custom_metrics.csv --hours 72 --show-chart
 ```
-
 ### Docker Commands
 
 **Start monitoring in background:**
@@ -313,6 +344,11 @@ pytest
 pytest -m unit          # Unit tests only
 pytest -m integration   # Integration tests only
 
+# Run specific modules
+pytest tests/test_database.py     # Database tests
+pytest tests/test_analytics.py    # Analytics tests
+pytest tests/test_web_server.py   # Web server tests
+
 # Generate HTML coverage report
 pytest --cov-report=html
 ```
@@ -341,7 +377,7 @@ codeql database analyze
 *Automatically discover optimal voltage/frequency combinations that maximize both performance and stability*
 
 [![Optimization](https://img.shields.io/badge/Algorithm-Sweet%20Spot%20Detection-orange.svg)](src/optimization_analyzer.py)
-[![Tests](https://img.shields.io/badge/Tests-65%20Passing-brightgreen.svg)](tests/test_optimization_analyzer.py)
+[![Tests](https://img.shields.io/badge/Tests-146%20Passing-brightgreen.svg)](tests/test_optimization_analyzer.py)
 [![Analysis](https://img.shields.io/badge/Analysis-Statistical%20Methods-blue.svg)](README.md#sweet-spot-algorithm)
 
 </div>
@@ -529,11 +565,20 @@ simple-monitor/
 ├── src/
 │   ├── collector.py      # Data collection and CSV handling
 │   ├── cli_view.py       # Dashboard and visualization
+│   ├── database.py       # SQLite database management
+│   ├── analytics.py      # Performance analysis and predictions
+│   ├── enhanced_collector.py # Enhanced monitoring with analytics
+│   ├── data_migration.py # CSV to database migration tool
 │   └── optimization_analyzer.py # Mining optimization analysis
+├── docs/
+│   └── DATABASE_ANALYTICS.md # Database and analytics documentation
 ├── tests/
 │   ├── __init__.py      # Test package initialization
 │   ├── test_collector.py # Unit tests for collector
 │   ├── test_cli_view.py # Unit tests for CLI viewer
+│   ├── test_database.py # Unit tests for database module
+│   ├── test_analytics.py # Unit tests for analytics module
+│   ├── test_web_server.py # Unit tests for web server module
 │   └── test_optimization_analyzer.py # Tests for optimization analyzer
 ├── examples/
 │   └── config.example.yaml # Example configuration
@@ -549,6 +594,7 @@ simple-monitor/
 ├── LICENSE          # MIT license
 ├── README.md       # This documentation
 ├── monitor.py     # Main monitoring script
+├── enhanced_monitor.py # Enhanced monitoring with database
 ├── viewer.py     # Dashboard launcher
 └── setup.py     # Installation and setup
 ```
@@ -671,7 +717,7 @@ python src/collector.py --validate-csv
 ### CI/CD Pipeline
 - **GitHub Actions** workflows for automation
 - **Multi-platform testing** (Ubuntu, Windows, macOS compatible)
-- **Automated unit testing** with 65+ comprehensive tests
+- **Automated unit testing** with 146+ comprehensive tests
 - **Automated code review** with quality gates
 - **Release automation** with proper versioning
 
@@ -738,7 +784,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <sub>
 🤖 Enhanced with advanced optimization analytics | 
-📊 65+ comprehensive tests | 
+📊 146+ comprehensive tests | 
 🔒 Enterprise security | 
 ⚡ Real-time monitoring
 </sub>

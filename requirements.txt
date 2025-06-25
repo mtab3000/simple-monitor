@@ -10,6 +10,9 @@ numpy>=1.21.0
 # Optional dependencies for enhanced features
 urllib3>=1.26.0
 
+# Database and analytics dependencies
+# SQLite3 is built into Python, no additional dependencies needed
+
 # Development dependencies (optional)
 # black>=22.0.0        # Code formatting
 pytest>=7.0.0         # Testing framework
