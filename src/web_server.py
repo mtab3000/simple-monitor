@@ -83,6 +83,9 @@ class BitaxeWebServer:
             """API endpoint for historical data."""
             try:
                 hours = request.args.get('hours', 24, type=int)
+                # Input validation for security
+                if hours < 1 or hours > 8760:  # Limit to 1 hour - 1 year
+                    hours = 24
                 data = self.get_historical_data(hours)
                 return jsonify({
                     'success': True,

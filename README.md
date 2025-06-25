@@ -763,6 +763,64 @@ python src/collector.py --validate-csv
 | 🔢 Import errors | Install: `sudo apt install python3-pandas python3-numpy` |
 | 🎯 Poor recommendations | Collect more data with varied settings |
 
+## 🔒 Security
+
+### Security Features
+
+✅ **Code Security:**
+- **CodeQL static analysis** in CI/CD pipeline
+- **Dependabot** for automated dependency updates  
+- **No hardcoded secrets** or credentials
+- **Input validation** on all user inputs
+
+✅ **Container Security:**
+- **Non-root user** execution in Docker containers
+- **Minimal attack surface** with slim base images
+- **Security scanning** with Trivy vulnerability scanner
+- **Proper file permissions** and isolation
+
+✅ **Network Security:**
+- **Local-only access** by default (no cloud dependencies)
+- **Configurable network bindings** for web interface
+- **Optional network isolation** with Docker networks
+- **No unnecessary port exposures**
+
+✅ **Data Protection:**
+- **Local data storage** (no external data transmission)
+- **Configurable data retention** policies
+- **Automatic backup** capabilities
+- **SQLite database** with file-level permissions
+
+### Security Best Practices
+
+**For Users:**
+```bash
+# Use firewall to restrict access to monitoring ports
+sudo ufw allow from 192.168.1.0/24 to any port 8080
+
+# Run with minimal permissions
+sudo chown -R $USER:$USER data/ backups/
+
+# Use secure networks for Bitaxe devices
+# Change default passwords on miners
+# Keep monitoring software updated
+```
+
+**For Production Deployments:**
+```bash
+# Use reverse proxy with SSL/TLS
+# Configure network-level access controls  
+# Consider VPN access for remote monitoring
+# Regular security updates via Dependabot
+```
+
+### Vulnerability Reporting
+
+🚨 **Found a security issue?** Please report it responsibly:
+- Use [GitHub Security Advisories](https://github.com/mtab3000/simple-monitor/security/advisories)
+- **DO NOT** disclose publicly until addressed
+- See our [Security Policy](SECURITY.md) for details
+
 ## 🔍 Quality Assurance
 
 ### Automated Testing
