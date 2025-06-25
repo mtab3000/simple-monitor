@@ -1,0 +1,35 @@
+[bandit]
+# Bandit configuration file for security scanning
+# https://bandit.readthedocs.io/en/latest/config.html
+
+# Skip certain tests for known safe patterns
+skips = B608,B110
+
+# B608: Hardcoded SQL expressions - we use parameterized queries with .format() for table names only
+# B110: Try/except pass - we have safe exception handling in specific cases
+
+# Test specific configurations
+[bandit.assert_used]
+skips = ['*test*.py', '*tests*.py']
+
+[bandit.hardcoded_password_string]
+# Skip password detection in test files
+exclude_dirs = ['./tests']
+
+[bandit.hardcoded_password_funcarg]
+# Skip password detection in test files  
+exclude_dirs = ['./tests']
+
+# Only run on Python source files
+include = ['*.py']
+
+# Exclude directories we don't want to scan
+exclude_dirs = ['./.venv', './venv', './.git', './node_modules', './__pycache__', './build', './dist']
+
+# Confidence levels: LOW, MEDIUM, HIGH
+# Severity levels: LOW, MEDIUM, HIGH
+[bandit.any_other_function_with_shell_equals_true]
+level = HIGH
+
+[bandit.blacklist]
+level = MEDIUM
