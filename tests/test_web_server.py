@@ -121,7 +121,7 @@ class TestBitaxeWebServer:
         assert web_server.config['csv_path'] == 'test_metrics.csv'
         assert len(web_server.config['miners']) == 2
         assert web_server.host == '0.0.0.0'
-        assert web_server.port == 8080
+        assert web_server.port == 80
 
     def test_load_config_success(self, mock_config):
         """Test successful configuration loading."""

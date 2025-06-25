@@ -13,14 +13,13 @@ from typing import Dict, List, Optional
 from flask import Flask, render_template, jsonify, request
 import yaml
 
-from collector import BitaxeCollector
 from cli_view import load_csv_data, get_latest_data_by_miner
 
 
 class BitaxeWebServer:
     """Web server for displaying Bitaxe monitoring data."""
     
-    def __init__(self, config_path: str = "config.yaml", host: str = "0.0.0.0", port: int = 8080):
+    def __init__(self, config_path: str = "config.yaml", host: str = "0.0.0.0", port: int = 80):
         """Initialize the web server."""
         self.config_path = config_path
         self.host = host
@@ -286,7 +285,7 @@ def main():
     parser = argparse.ArgumentParser(description='Bitaxe Web Dashboard')
     parser.add_argument('--config', default='config.yaml', help='Configuration file path')
     parser.add_argument('--host', default='0.0.0.0', help='Host to bind to')
-    parser.add_argument('--port', type=int, default=8080, help='Port to bind to')
+    parser.add_argument('--port', type=int, default=80, help='Port to bind to')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     
     args = parser.parse_args()

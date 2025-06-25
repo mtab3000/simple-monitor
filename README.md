@@ -144,7 +144,7 @@ PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-cha
    docker-compose exec bitaxe-monitor python viewer.py --live
    
    # Web dashboard (if using --profile web)
-   # Open http://localhost:8080 in your browser
+   # Open http://localhost:80 in your browser
    ```
 
 ### Manual Installation
@@ -254,7 +254,7 @@ python web_dashboard.py
 
 **Custom host/port:**
 ```bash
-python web_dashboard.py --host 0.0.0.0 --port 8080
+python web_dashboard.py --host 0.0.0.0 --port 80
 ```
 
 **Web Features:**
@@ -296,7 +296,7 @@ docker-compose --profile enhanced up -d
 **Web dashboard (recommended):**
 ```bash
 docker-compose --profile web up -d
-# Access at http://localhost:8080
+# Access at http://localhost:80
 ```
 
 **All services together:**
@@ -796,7 +796,7 @@ python src/collector.py --validate-csv
 **For Users:**
 ```bash
 # Use firewall to restrict access to monitoring ports
-sudo ufw allow from 192.168.1.0/24 to any port 8080
+sudo ufw allow from 192.168.1.0/24 to any port 80
 
 # Run with minimal permissions
 sudo chown -R $USER:$USER data/ backups/
