@@ -15,3 +15,4 @@ sys.path.insert(0, src_dir)
 if __name__ == "__main__":
     from cli_view import main
     main()
+    

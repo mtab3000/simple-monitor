@@ -137,26 +137,55 @@ def create_main_table(latest_data, show_detailed=False):
         
         if status == 'online':
             online_count += 1
-            total_hashrate += data.get('hashrate_ghs', 0)
-            total_power += data.get('power_w', 0)
+            # Safely handle potentially invalid numeric values
+            hashrate_val = data.get('hashrate_ghs', 0)
+            power_val = data.get('power_w', 0)
+            try:
+                total_hashrate += float(hashrate_val) if hashrate_val is not None else 0
+            except (ValueError, TypeError):
+                pass  # Skip invalid values
+            try:
+                total_power += float(power_val) if power_val is not None else 0
+            except (ValueError, TypeError):
+                pass  # Skip invalid values
         
-        # Format values
-        hashrate = f"{data.get('hashrate_ghs', 0):.1f}" if data.get('hashrate_ghs', 0) > 0 else "-"
-        perf_ratio = f"{data.get('hashrate_ratio_percent', 0):.0f}" if data.get('hashrate_ratio_percent', 0) > 0 else "-"
-        temp_asic = f"{data.get('temp_asic_c', 0):.1f}" if data.get('temp_asic_c', 0) > 0 else "-"
-        temp_vr = f"{data.get('temp_vr_c', 0):.1f}" if data.get('temp_vr_c', 0) > 0 else "-"
-        power = f"{data.get('power_w', 0):.1f}" if data.get('power_w', 0) > 0 else "-"
-        voltage_set = f"{data.get('voltage_asic_set_v', 0):.3f}" if data.get('voltage_asic_set_v', 0) > 0 else "-"
-        voltage_actual = f"{data.get('voltage_asic_actual_v', 0):.3f}" if data.get('voltage_asic_actual_v', 0) > 0 else "-"
-        freq_set = f"{data.get('frequency_set_mhz', 0)}" if data.get('frequency_set_mhz', 0) > 0 else "-"
-        efficiency = f"{data.get('efficiency_j_th', 0):.1f}" if data.get('efficiency_j_th', 0) > 0 else "-"
-        fan_speed = f"{data.get('fan_speed_percent', 0)}" if data.get('fan_speed_percent', 0) > 0 else "-"
-        uptime_hrs = f"{data.get('uptime_hours', 0):.1f}" if data.get('uptime_hours', 0) > 0 else "-"
+        # Format values with safe numeric conversion
+        def safe_float(value, default=0):
+            """Safely convert value to float"""
+            if value is None or value == '':
+                return default
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return default
+        
+        def safe_format_float(value, fmt=".1f", default="-"):
+            """Safely format float value"""
+            safe_val = safe_float(value)
+            return f"{safe_val:{fmt}}" if safe_val > 0 else default
+        
+        def safe_format_int(value, default="-"):
+            """Safely format integer value"""
+            safe_val = safe_float(value)
+            return f"{int(safe_val)}" if safe_val > 0 else default
+        
+        hashrate = safe_format_float(data.get('hashrate_ghs', 0))
+        perf_ratio = safe_format_float(data.get('hashrate_ratio_percent', 0), ".0f")
+        temp_asic = safe_format_float(data.get('temp_asic_c', 0))
+        temp_vr = safe_format_float(data.get('temp_vr_c', 0))
+        power = safe_format_float(data.get('power_w', 0))
+        voltage_set = safe_format_float(data.get('voltage_asic_set_v', 0), ".3f")
+        voltage_actual = safe_format_float(data.get('voltage_asic_actual_v', 0), ".3f")
+        freq_set = safe_format_int(data.get('frequency_set_mhz', 0))
+        efficiency = safe_format_float(data.get('efficiency_j_th', 0))
+        fan_speed = safe_format_int(data.get('fan_speed_percent', 0))
+        uptime_hrs = safe_format_float(data.get('uptime_hours', 0))
         hostname = str(data.get('hostname', 'Unknown'))[:7] if data.get('hostname') else 'Unknown'  # Truncate for display
-        free_heap_mb = f"{data.get('free_heap_bytes', 0) / 1024 / 1024:.1f}" if data.get('free_heap_bytes', 0) > 0 else "-"
-        overclock = "Y" if data.get('overclock_enabled', 0) else "N"
-        current = f"{data.get('current_a', 0):.2f}" if data.get('current_a', 0) > 0 else "-"
-        wifi_rssi = f"{data.get('wifi_rssi', 0)}" if data.get('wifi_rssi', 0) != 0 else "-"
+        free_heap_mb = safe_format_float(safe_float(data.get('free_heap_bytes', 0)) / 1024 / 1024) if safe_float(data.get('free_heap_bytes', 0)) > 0 else "-"
+        overclock = "Y" if safe_float(data.get('overclock_enabled', 0)) else "N"
+        current = safe_format_float(data.get('current_a', 0), ".2f")
+        wifi_rssi_val = safe_float(data.get('wifi_rssi', 0))
+        wifi_rssi = f"{int(wifi_rssi_val)}" if wifi_rssi_val != 0 else "-"
         
         if show_detailed:
             miner_name = f"{miner_ip}\n({hostname})"
@@ -226,13 +255,23 @@ def create_fleet_stats_panel(latest_data):
     offline_count = total_miners - online_count
     
     if online_miners:
-        total_hashrate = sum(m.get('hashrate_ghs', 0) for m in online_miners)
-        total_power = sum(m.get('power_w', 0) for m in online_miners)
-        avg_temp_asic = sum(m.get('temp_asic_c', 0) for m in online_miners) / len(online_miners)
-        avg_temp_vr = sum(m.get('temp_vr_c', 0) for m in online_miners) / len(online_miners)
+        def safe_get_float(miner, key, default=0):
+            """Safely get float value from miner data"""
+            value = miner.get(key, default)
+            if value is None or value == '':
+                return default
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return default
+        
+        total_hashrate = sum(safe_get_float(m, 'hashrate_ghs') for m in online_miners)
+        total_power = sum(safe_get_float(m, 'power_w') for m in online_miners)
+        avg_temp_asic = sum(safe_get_float(m, 'temp_asic_c') for m in online_miners) / len(online_miners)
+        avg_temp_vr = sum(safe_get_float(m, 'temp_vr_c') for m in online_miners) / len(online_miners)
         avg_efficiency = total_power / (total_hashrate / 1000) if total_hashrate > 0 else 0  # J/TH
-        total_shares = sum(m.get('shares_accepted', 0) for m in online_miners)
-        total_rejected = sum(m.get('shares_rejected', 0) for m in online_miners)
+        total_shares = sum(safe_get_float(m, 'shares_accepted') for m in online_miners)
+        total_rejected = sum(safe_get_float(m, 'shares_rejected') for m in online_miners)
         rejection_rate = (total_rejected / (total_shares + total_rejected) * 100) if (total_shares + total_rejected) > 0 else 0
     else:
         total_hashrate = total_power = avg_temp_asic = avg_temp_vr = avg_efficiency = 0
@@ -295,45 +334,74 @@ def create_individual_panels(latest_data):
             panel_color = "bright_yellow"
             status_text = get_status_display(status)
         
+        # Safe numeric conversion for panels
+        def safe_panel_float(value, default=0):
+            """Safely convert value to float for panel display"""
+            if value is None or value == '':
+                return default
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return default
+        
         # Performance indicators
-        perf_ratio = data.get('hashrate_ratio_percent', 0)
+        perf_ratio = safe_panel_float(data.get('hashrate_ratio_percent', 0))
         perf_bar = "█" * int(perf_ratio // 10) + "░" * (10 - int(perf_ratio // 10))
         
         # Temperature warnings
-        asic_temp = data.get('temp_asic_c', 0)
-        vr_temp = data.get('temp_vr_c', 0)
+        asic_temp = safe_panel_float(data.get('temp_asic_c', 0))
+        vr_temp = safe_panel_float(data.get('temp_vr_c', 0))
         temp_warning = " 🔥" if asic_temp > 80 or vr_temp > 80 else ""
+        
+        # Safe format all values for content
+        hashrate_val = safe_panel_float(data.get('hashrate_ghs', 0))
+        expected_hashrate_val = safe_panel_float(data.get('expected_hashrate_ghs', 0))
+        power_val = safe_panel_float(data.get('power_w', 0))
+        current_val = safe_panel_float(data.get('current_a', 0))
+        voltage_set_val = safe_panel_float(data.get('voltage_asic_set_v', 0))
+        voltage_actual_val = safe_panel_float(data.get('voltage_asic_actual_v', 0))
+        voltage_device_val = safe_panel_float(data.get('voltage_device_v', 0))
+        frequency_val = safe_panel_float(data.get('frequency_set_mhz', 0))
+        efficiency_val = safe_panel_float(data.get('efficiency_j_th', 0))
+        overclock_val = safe_panel_float(data.get('overclock_enabled', 0))
+        shares_accepted_val = safe_panel_float(data.get('shares_accepted', 0))
+        shares_rejected_val = safe_panel_float(data.get('shares_rejected', 0))
+        fan_speed_val = safe_panel_float(data.get('fan_speed_percent', 0))
+        fan_rpm_val = safe_panel_float(data.get('fan_rpm', 0))
+        free_heap_val = safe_panel_float(data.get('free_heap_bytes', 0))
+        wifi_rssi_val = safe_panel_float(data.get('wifi_rssi', 0))
+        uptime_val = safe_panel_float(data.get('uptime_hours', 0))
         
         content = f"""📊 {status_text}
 
 🔗 [bold green]Mining Performance[/bold green]
-   Hashrate: [green]{data.get('hashrate_ghs', 0):.1f} GH/s[/green] ({perf_ratio:.0f}% of target)
-   Expected: [dim]{data.get('expected_hashrate_ghs', 0):.1f} GH/s[/dim]
+   Hashrate: [green]{hashrate_val:.1f} GH/s[/green] ({perf_ratio:.0f}% of target)
+   Expected: [dim]{expected_hashrate_val:.1f} GH/s[/dim]
    Performance: {perf_bar} {perf_ratio:.0f}%
 
 🌡️ [bold red]Temperatures[/bold red]{temp_warning}
    ASIC: [red]{asic_temp:.1f}°C[/red]  │  VR: [bright_red]{vr_temp:.1f}°C[/bright_red]
 
 ⚡ [bold blue]Power & Voltage[/bold blue]
-   Power: [blue]{data.get('power_w', 0):.1f}W[/blue]  │  Current: [purple]{data.get('current_a', 0):.2f}A[/purple]
-   🔋 Set: [magenta]{data.get('voltage_asic_set_v', 0):.3f}V[/magenta]  │  Actual: [magenta]{data.get('voltage_asic_actual_v', 0):.3f}V[/magenta]
-   📱 Device: [dim]{data.get('voltage_device_v', 0):.3f}V[/dim]
+   Power: [blue]{power_val:.1f}W[/blue]  │  Current: [purple]{current_val:.2f}A[/purple]
+   🔋 Set: [magenta]{voltage_set_val:.3f}V[/magenta]  │  Actual: [magenta]{voltage_actual_val:.3f}V[/magenta]
+   📱 Device: [dim]{voltage_device_val:.3f}V[/dim]
 
 ⚙️ [bold cyan]Configuration[/bold cyan]
-   Frequency: [cyan]{data.get('frequency_set_mhz', 0)} MHz[/cyan]
-   Efficiency: [yellow]{data.get('efficiency_j_th', 0):.1f} J/TH[/yellow]
-   Overclock: {'[green]🚀 Enabled[/green]' if data.get('overclock_enabled', 0) else '[dim]❌ Disabled[/dim]'}
+   Frequency: [cyan]{int(frequency_val)} MHz[/cyan]
+   Efficiency: [yellow]{efficiency_val:.1f} J/TH[/yellow]
+   Overclock: {'[green]🚀 Enabled[/green]' if overclock_val else '[dim]❌ Disabled[/dim]'}
 
 💎 [bold yellow]Mining Stats[/bold yellow]
-   ✅ Accepted: [green]{data.get('shares_accepted', 0):,}[/green]
-   ❌ Rejected: [red]{data.get('shares_rejected', 0):,}[/red]
+   ✅ Accepted: [green]{int(shares_accepted_val):,}[/green]
+   ❌ Rejected: [red]{int(shares_rejected_val):,}[/red]
    🏆 Best Session: [bold]{data.get('best_session_diff', '0')}[/bold]
 
 🖥️ [bold dim]System Status[/bold dim]
-   🌪️ Fan: {data.get('fan_speed_percent', 0)}% ([dim]{data.get('fan_rpm', 0)} RPM[/dim])
-   💾 Memory: [cyan]{data.get('free_heap_bytes', 0) / 1024 / 1024:.1f} MB free[/cyan]
-   📶 WiFi: [green]{data.get('wifi_rssi', 0)} dBm[/green]
-   ⏰ Uptime: [dim]{data.get('uptime_hours', 0):.1f} hrs[/dim]"""
+   🌪️ Fan: {int(fan_speed_val)}% ([dim]{int(fan_rpm_val)} RPM[/dim])
+   💾 Memory: [cyan]{free_heap_val / 1024 / 1024:.1f} MB free[/cyan]
+   📶 WiFi: [green]{int(wifi_rssi_val)} dBm[/green]
+   ⏰ Uptime: [dim]{uptime_val:.1f} hrs[/dim]"""
         
         if data.get('pool_user') and data.get('pool_user') != 'Unknown':
             pool_short = data['pool_user'][:15] + "..." if len(data['pool_user']) > 15 else data['pool_user']
