@@ -102,8 +102,9 @@ class TestCliView:
                 writer = csv.DictWriter(f, fieldnames=sample_csv_data[0].keys())
                 writer.writeheader()
                 writer.writerows(sample_csv_data)
-            yield f.name
-        os.unlink(f.name)
+            temp_file = f.name
+        yield temp_file
+        os.unlink(temp_file)
 
     def test_load_config_success(self, mock_config):
         """Test successful configuration loading."""
@@ -191,13 +192,20 @@ miners:
         # Convert sample data to proper format
         latest_data = {}
         for row in sample_csv_data:
-            # Convert string values to floats
+            # Convert string values to floats for all numeric fields
             processed_row = row.copy()
-            for key, value in processed_row.items():
-                if key in ['hashrate_ghs', 'temp_asic_c', 'temp_vr_c', 'power_w', 
-                          'voltage_asic_actual_v', 'efficiency_j_th', 'uptime_hours']:
+            numeric_fields = [
+                'hashrate_ghs', 'expected_hashrate_ghs', 'hashrate_ratio_percent',
+                'temp_asic_c', 'temp_vr_c', 'power_w', 'voltage_asic_set_v',
+                'voltage_asic_actual_v', 'voltage_device_v', 'frequency_set_mhz',
+                'efficiency_j_th', 'shares_accepted', 'shares_rejected',
+                'uptime_hours', 'wifi_rssi', 'fan_speed_percent', 'fan_rpm',
+                'free_heap_bytes', 'overclock_enabled', 'current_a'
+            ]
+            for key in numeric_fields:
+                if key in processed_row:
                     try:
-                        processed_row[key] = float(value)
+                        processed_row[key] = float(processed_row[key])
                     except (ValueError, TypeError):
                         processed_row[key] = 0.0
             latest_data[row['miner_ip']] = processed_row
@@ -213,11 +221,18 @@ miners:
         latest_data = {}
         for row in sample_csv_data:
             processed_row = row.copy()
-            for key, value in processed_row.items():
-                if key in ['hashrate_ghs', 'temp_asic_c', 'temp_vr_c', 'power_w', 
-                          'voltage_asic_actual_v', 'efficiency_j_th', 'uptime_hours']:
+            numeric_fields = [
+                'hashrate_ghs', 'expected_hashrate_ghs', 'hashrate_ratio_percent',
+                'temp_asic_c', 'temp_vr_c', 'power_w', 'voltage_asic_set_v',
+                'voltage_asic_actual_v', 'voltage_device_v', 'frequency_set_mhz',
+                'efficiency_j_th', 'shares_accepted', 'shares_rejected',
+                'uptime_hours', 'wifi_rssi', 'fan_speed_percent', 'fan_rpm',
+                'free_heap_bytes', 'overclock_enabled', 'current_a'
+            ]
+            for key in numeric_fields:
+                if key in processed_row:
                     try:
-                        processed_row[key] = float(value)
+                        processed_row[key] = float(processed_row[key])
                     except (ValueError, TypeError):
                         processed_row[key] = 0.0
             latest_data[row['miner_ip']] = processed_row
@@ -233,11 +248,18 @@ miners:
         latest_data = {}
         for row in sample_csv_data:
             processed_row = row.copy()
-            for key, value in processed_row.items():
-                if key in ['hashrate_ghs', 'temp_asic_c', 'temp_vr_c', 'power_w', 
-                          'shares_accepted', 'shares_rejected']:
+            numeric_fields = [
+                'hashrate_ghs', 'expected_hashrate_ghs', 'hashrate_ratio_percent',
+                'temp_asic_c', 'temp_vr_c', 'power_w', 'voltage_asic_set_v',
+                'voltage_asic_actual_v', 'voltage_device_v', 'frequency_set_mhz',
+                'efficiency_j_th', 'shares_accepted', 'shares_rejected',
+                'uptime_hours', 'wifi_rssi', 'fan_speed_percent', 'fan_rpm',
+                'free_heap_bytes', 'overclock_enabled', 'current_a'
+            ]
+            for key in numeric_fields:
+                if key in processed_row:
                     try:
-                        processed_row[key] = float(value)
+                        processed_row[key] = float(processed_row[key])
                     except (ValueError, TypeError):
                         processed_row[key] = 0.0
             latest_data[row['miner_ip']] = processed_row
@@ -253,15 +275,18 @@ miners:
         latest_data = {}
         for row in sample_csv_data:
             processed_row = row.copy()
-            for key, value in processed_row.items():
-                if key in ['hashrate_ghs', 'hashrate_ratio_percent', 'temp_asic_c', 
-                          'temp_vr_c', 'power_w', 'current_a', 'voltage_asic_set_v',
-                          'voltage_asic_actual_v', 'voltage_device_v', 'frequency_set_mhz',
-                          'efficiency_j_th', 'shares_accepted', 'shares_rejected',
-                          'free_heap_bytes', 'overclock_enabled', 'fan_speed_percent',
-                          'fan_rpm', 'wifi_rssi', 'uptime_hours']:
+            numeric_fields = [
+                'hashrate_ghs', 'expected_hashrate_ghs', 'hashrate_ratio_percent',
+                'temp_asic_c', 'temp_vr_c', 'power_w', 'voltage_asic_set_v',
+                'voltage_asic_actual_v', 'voltage_device_v', 'frequency_set_mhz',
+                'efficiency_j_th', 'shares_accepted', 'shares_rejected',
+                'uptime_hours', 'wifi_rssi', 'fan_speed_percent', 'fan_rpm',
+                'free_heap_bytes', 'overclock_enabled', 'current_a'
+            ]
+            for key in numeric_fields:
+                if key in processed_row:
                     try:
-                        processed_row[key] = float(value)
+                        processed_row[key] = float(processed_row[key])
                     except (ValueError, TypeError):
                         processed_row[key] = 0.0
             latest_data[row['miner_ip']] = processed_row
@@ -313,6 +338,90 @@ miners:
 class TestCliViewIntegration:
     """Integration tests for CLI viewer functionality."""
 
+    @pytest.fixture
+    def sample_csv_data(self):
+        """Create sample CSV data for testing."""
+        return [
+            {
+                'timestamp': '2024-01-01 12:00:00',
+                'miner_ip': '192.168.1.45',
+                'hostname': 'bitaxe1',
+                'status': 'online',
+                'hashrate_ghs': '934.5',
+                'expected_hashrate_ghs': '934.3',
+                'hashrate_ratio_percent': '100.0',
+                'temp_asic_c': '60.0',
+                'temp_vr_c': '53.0',
+                'power_w': '14.0',
+                'voltage_asic_set_v': '1.003',
+                'voltage_asic_actual_v': '0.981',
+                'voltage_device_v': '4.938',
+                'frequency_set_mhz': '458',
+                'efficiency_j_th': '15.1',
+                'shares_accepted': '2285',
+                'shares_rejected': '1',
+                'uptime_hours': '3.1',
+                'wifi_rssi': '-52',
+                'fan_speed_percent': '46',
+                'fan_rpm': '3837',
+                'free_heap_bytes': '8388608',
+                'overclock_enabled': '1',
+                'current_a': '9.03',
+                'pool_user': '3Aas8yBKTY3wA5d...',
+                'best_session_diff': '2.87M'
+            },
+            {
+                'timestamp': '2024-01-01 12:05:00',
+                'miner_ip': '192.168.1.46',
+                'hostname': 'bitaxe2',
+                'status': 'online',
+                'hashrate_ghs': '944.5',
+                'expected_hashrate_ghs': '944.5',
+                'hashrate_ratio_percent': '100.0',
+                'temp_asic_c': '59.5',
+                'temp_vr_c': '54.0',
+                'power_w': '14.2',
+                'voltage_asic_set_v': '1.003',
+                'voltage_asic_actual_v': '0.974',
+                'voltage_device_v': '5.008',
+                'frequency_set_mhz': '463',
+                'efficiency_j_th': '15.0',
+                'shares_accepted': '2366',
+                'shares_rejected': '3',
+                'uptime_hours': '3.1',
+                'wifi_rssi': '-49',
+                'fan_speed_percent': '38',
+                'fan_rpm': '3148',
+                'free_heap_bytes': '8388608',
+                'overclock_enabled': '1',
+                'current_a': '9.23',
+                'pool_user': '3Aas8yBKTY3wA5d...',
+                'best_session_diff': '1.69M'
+            }
+        ]
+
+    @pytest.fixture
+    def temp_csv_file(self, sample_csv_data):
+        """Create a temporary CSV file with sample data."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            if sample_csv_data:
+                writer = csv.DictWriter(f, fieldnames=sample_csv_data[0].keys())
+                writer.writeheader()
+                writer.writerows(sample_csv_data)
+            temp_file = f.name
+        yield temp_file
+        os.unlink(temp_file)
+    
+    def create_temp_csv_file(self, data):
+        """Helper method to create temporary CSV file with specific data."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            if data:
+                writer = csv.DictWriter(f, fieldnames=data[0].keys())
+                writer.writeheader()
+                writer.writerows(data)
+            temp_file = f.name
+        return temp_file
+
     @pytest.mark.integration
     def test_full_viewer_workflow(self, temp_csv_file, sample_csv_data):
         """Test complete viewer workflow from CSV to display."""
@@ -337,7 +446,7 @@ class TestCliViewIntegration:
         assert len(individual_panels) == 2
 
     @pytest.mark.integration
-    def test_viewer_with_offline_miners(self, temp_csv_file):
+    def test_viewer_with_offline_miners(self):
         """Test viewer behavior with offline miners."""
         offline_data = [
             {
@@ -354,25 +463,24 @@ class TestCliViewIntegration:
             }
         ]
         
-        # Write offline data to CSV
-        with open(temp_csv_file, 'w', newline='') as f:
-            if offline_data:
-                writer = csv.DictWriter(f, fieldnames=offline_data[0].keys())
-                writer.writeheader()
-                writer.writerows(offline_data)
+        # Create temporary CSV file
+        temp_file = self.create_temp_csv_file(offline_data)
         
-        data = load_csv_data(temp_csv_file)
-        latest_data = get_latest_data_by_miner(data)
-        
-        # Verify offline status is handled
-        assert latest_data['192.168.1.45']['status'] == 'connection_failed'
-        
-        # Test that panels can be created even with offline miners
-        panels = create_individual_panels(latest_data)
-        assert len(panels) == 1
+        try:
+            data = load_csv_data(temp_file)
+            latest_data = get_latest_data_by_miner(data)
+            
+            # Verify offline status is handled
+            assert latest_data['192.168.1.45']['status'] == 'connection_failed'
+            
+            # Test that panels can be created even with offline miners
+            panels = create_individual_panels(latest_data)
+            assert len(panels) == 1
+        finally:
+            os.unlink(temp_file)
 
     @pytest.mark.integration 
-    def test_viewer_with_mixed_status_miners(self, temp_csv_file):
+    def test_viewer_with_mixed_status_miners(self):
         """Test viewer with miners in different statuses."""
         mixed_data = [
             {
@@ -413,24 +521,24 @@ class TestCliViewIntegration:
             }
         ]
         
-        # Write mixed data to CSV
-        with open(temp_csv_file, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=mixed_data[0].keys())
-            writer.writeheader()
-            writer.writerows(mixed_data)
+        # Create temporary CSV file
+        temp_file = self.create_temp_csv_file(mixed_data)
         
-        data = load_csv_data(temp_csv_file)
-        latest_data = get_latest_data_by_miner(data)
-        
-        # Test fleet stats with mixed statuses
-        fleet_panel = create_fleet_stats_panel(latest_data)
-        assert fleet_panel is not None
-        
-        # Verify different statuses are represented
-        statuses = [miner['status'] for miner in latest_data.values()]
-        assert 'online' in statuses
-        assert 'overheating' in statuses
-        assert 'connection_failed' in statuses
+        try:
+            data = load_csv_data(temp_file)
+            latest_data = get_latest_data_by_miner(data)
+            
+            # Test fleet stats with mixed statuses
+            fleet_panel = create_fleet_stats_panel(latest_data)
+            assert fleet_panel is not None
+            
+            # Verify different statuses are represented
+            statuses = [miner['status'] for miner in latest_data.values()]
+            assert 'online' in statuses
+            assert 'overheating' in statuses
+            assert 'connection_failed' in statuses
+        finally:
+            os.unlink(temp_file)
 
 
 @pytest.mark.unit
