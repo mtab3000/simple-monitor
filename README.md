@@ -327,9 +327,10 @@ codeql database analyze
 ```
 
 **Continuous Integration:**
+- **Unit Tests:** Automated testing on push/PR across Python 3.8-3.11
 - **Pylint:** Automated code quality checks on push/PR
 - **CodeQL:** Security analysis runs weekly and on push
-- **Test Coverage:** Minimum 80% coverage enforced
+- **Test Coverage:** Minimum 80% coverage enforced with coverage reports
 
 ## 🎯 Mining Optimization Analyzer
 
@@ -670,6 +671,7 @@ python src/collector.py --validate-csv
 ### CI/CD Pipeline
 - **GitHub Actions** workflows for automation
 - **Multi-platform testing** (Ubuntu, Windows, macOS compatible)
+- **Automated unit testing** with 65+ comprehensive tests
 - **Automated code review** with quality gates
 - **Release automation** with proper versioning
 
