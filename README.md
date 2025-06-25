@@ -128,23 +128,24 @@ PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-cha
 
 3. **Start with Docker Compose:**
    ```bash
-   # Basic monitoring
+   # 🚀 ENHANCED MONITORING (DEFAULT - RECOMMENDED)
+   # Includes: Advanced analytics, database, web dashboard, optimization analysis
    docker-compose up -d
    
-   # Web dashboard (recommended)
-   docker-compose --profile web up -d
-   
-   # Enhanced monitoring with analytics
-   docker-compose --profile enhanced up -d
+   # 🔧 Basic monitoring only (minimal setup)
+   docker-compose --profile basic up -d
    ```
 
-4. **Access your dashboard:**
+4. **Access your dashboards:**
    ```bash
-   # Terminal dashboard
-   docker-compose exec bitaxe-monitor python viewer.py --live
-   
-   # Web dashboard (if using --profile web)
+   # 🌐 Web Dashboard (DEFAULT)
    # Open http://localhost:80 in your browser
+   
+   # 📊 Terminal Dashboard
+   docker-compose exec bitaxe-enhanced python viewer.py --live
+   
+   # 🎯 Mining Optimization Analysis
+   docker-compose exec bitaxe-enhanced python src/optimization_analyzer.py --hours 24 --show-chart
    ```
 
 ### Manual Installation
@@ -281,62 +282,269 @@ python src/optimization_analyzer.py --hours 168 --output weekly_optimization.jso
 # Custom CSV path and time window
 python src/optimization_analyzer.py --csv-path custom_metrics.csv --hours 72 --show-chart
 ```
-### Docker Commands
 
-**Basic monitoring (default):**
+### 🎯 **Advanced Optimization Analysis**
+
+**Comprehensive sweet spot detection:**
 ```bash
+# 📈 Weekly optimization analysis with detailed reporting
+python src/optimization_analyzer.py --hours 168 --show-chart --output weekly_analysis.json
+
+# 🎯 Miner-specific optimization (replace IP)
+python src/optimization_analyzer.py --miner-ip 192.168.1.45 --hours 48 --detailed
+
+# 📉 Performance comparison across fleet
+python src/optimization_analyzer.py --hours 72 --compare-miners --export-csv
+
+# 🔥 Real-time optimization monitoring
+watch -n 300 'python src/optimization_analyzer.py --hours 6 --quick-summary'
+```
+
+**Understanding the analysis:**
+```bash
+# 🎢 Sweet Spot Algorithm Explanation:
+# - Performance Score: Hashrate (40%) + Efficiency (30%) + Temperature (20%) + Power Ratio (10%)
+# - Stability Score: Hashrate CV (50%) + Temp StdDev (30%) + Efficiency StdDev (20%)
+# - Sweet Spot = Performance Score ÷ (1 + Stability Score/100)
+
+# 📊 Benchmark Detection:
+# - Automatically identifies testing sessions with 5+ voltage/frequency combinations
+# - Analyzes 30-minute windows for optimal setting discovery
+# - Provides stability metrics using coefficient of variation
+```
+### 🐳 Docker Commands
+
+## 🚀 **Enhanced Monitoring Stack (DEFAULT)**
+
+**Start complete monitoring solution:**
+```bash
+# 🎆 Full stack: Enhanced monitoring + Web dashboard + Analytics
 docker-compose up -d
+
+# 🔍 View all running services
+docker-compose ps
 ```
 
-**Enhanced monitoring with database analytics:**
+**Access your monitoring:**
 ```bash
-docker-compose --profile enhanced up -d
+# 🌐 Web Dashboard (Primary Interface)
+# Open http://localhost:80 in your browser
+
+# 📊 Live Terminal Dashboard
+docker-compose exec bitaxe-enhanced python viewer.py --live --detailed
+
+# 🎯 Mining Optimization Analysis
+docker-compose exec bitaxe-enhanced python src/optimization_analyzer.py --hours 24 --show-chart
+
+# 📈 Database Analytics
+docker-compose exec bitaxe-enhanced python src/analytics.py --report
 ```
 
-**Web dashboard (recommended):**
-```bash
-docker-compose --profile web up -d
-# Access at http://localhost:80
-```
+## 🔧 **Minimal Setup (Basic Monitoring)**
 
-**All services together:**
+**For resource-constrained environments:**
 ```bash
-docker-compose --profile enhanced --profile web up -d
-```
+# Basic CSV-only monitoring
+docker-compose --profile basic up -d
 
-**View live terminal dashboard:**
-```bash
+# Access basic monitoring
 docker-compose exec bitaxe-monitor python viewer.py --live
 ```
 
-**Check logs:**
-```bash
-# Basic monitoring
-docker-compose logs -f bitaxe-monitor
+## 🔍 **Service Management**
 
-# Enhanced monitoring  
+**Check service status:**
+```bash
+# View running containers
+docker-compose ps
+
+# Check service health
+docker-compose exec bitaxe-enhanced python -c "import src.database; print('Database OK')"
+```
+
+**View logs:**
+```bash
+# Enhanced monitoring logs
 docker-compose logs -f bitaxe-enhanced
 
-# Web dashboard
+# Web dashboard logs
 docker-compose logs -f bitaxe-web
+
+# All services
+docker-compose logs -f
+```
+
+**Restart services:**
+```bash
+# Restart all services
+docker-compose restart
+
+# Restart specific service
+docker-compose restart bitaxe-enhanced
+docker-compose restart bitaxe-web
 ```
 
 **Stop services:**
 ```bash
+# Stop all services
 docker-compose down
-# or with profiles:
-docker-compose --profile enhanced --profile web down
+
+# Stop and remove volumes (CAUTION: Deletes data)
+docker-compose down -v
 ```
 
-## 📊 Dashboard Features
+## 💾 **Data Management**
 
-### Fleet Dashboard
+**Backup operations:**
+```bash
+# Manual backup
+docker-compose exec bitaxe-enhanced python src/database.py --backup
+
+# Export data
+docker-compose exec bitaxe-enhanced python src/analytics.py --export-csv
+
+# Access backup files
+ls -la backups/
+```
+
+**Database operations:**
+```bash
+# Database migration from CSV
+docker-compose exec bitaxe-enhanced python src/data_migration.py --action migrate
+
+# Database integrity check
+docker-compose exec bitaxe-enhanced python src/database.py --check-integrity
+
+# View database stats
+docker-compose exec bitaxe-enhanced python src/analytics.py --stats
+```
+
+## 🌐 **Web Dashboard API & Features**
+
+### 🚀 **REST API Endpoints**
+
+**Real-time data access:**
+```bash
+# Current miner status
+curl http://localhost:80/api/status | jq
+
+# Fleet statistics
+curl http://localhost:80/api/fleet | jq
+
+# Historical data (last 24 hours)
+curl "http://localhost:80/api/history?hours=24" | jq
+
+# Custom time range (last week)
+curl "http://localhost:80/api/history?hours=168" | jq
+```
+
+**API Response examples:**
+```json
+// /api/status response
+{
+  "success": true,
+  "data": {
+    "miners": [
+      {
+        "ip": "192.168.1.45",
+        "hostname": "bitaxe-001",
+        "status": "online",
+        "hashrate_ghs": 934.5,
+        "expected_hashrate_ghs": 934.3,
+        "hashrate_ratio_percent": 100.02,
+        "temp_asic_c": 59.8,
+        "temp_vr_c": 52.1,
+        "power_w": 14.1,
+        "efficiency_j_th": 15.1,
+        "voltage_asic_actual_v": 0.981,
+        "frequency_set_mhz": 458,
+        "shares_accepted": 2847,
+        "shares_rejected": 2,
+        "rejection_rate_percent": 0.07,
+        "wifi_rssi": -52,
+        "uptime_hours": 12.4
+      }
+    ]
+  },
+  "timestamp": "2024-01-01T12:00:00"
+}
+
+// /api/fleet response
+{
+  "success": true,
+  "data": {
+    "total_miners": 3,
+    "online_miners": 3,
+    "offline_miners": 0,
+    "total_hashrate_ghs": 2803.7,
+    "total_power_w": 42.3,
+    "average_efficiency_j_th": 15.08,
+    "average_temp_c": 59.2,
+    "total_shares_accepted": 8541,
+    "total_shares_rejected": 7,
+    "fleet_rejection_rate_percent": 0.082
+  }
+}
+```
+
+### 📋 **Web Dashboard Features**
+
+**Professional monitoring interface:**
+- 📊 **Real-time updates** every 5 seconds with auto-refresh
+- 📈 **Fleet overview** with comprehensive statistics and health indicators
+- 💰 **Individual miner cards** with detailed performance metrics
+- 📱 **Responsive design** optimized for desktop, tablet, and mobile
+- 🎨 **Visual indicators** with color-coded status and progress bars
+- 🔄 **Auto-refresh toggle** for manual control and reduced bandwidth
+- 🔗 **Deep linking** to specific miners and time ranges
+- 📏 **CSV export** functionality for historical analysis
+
+**Advanced visualizations:**
+- 📉 **Performance trends** with hashrate and efficiency graphs
+- 🌡️ **Temperature monitoring** with overheating alerts
+- ⚡ **Power consumption** tracking and efficiency ratings
+- 📆 **Share statistics** with acceptance/rejection rates
+- 📡 **Network status** including WiFi signal strength
+- 🕰️ **Uptime tracking** and availability metrics
+
+## 📊 **Enhanced Analytics & Database Features**
+
+### 📈 **Advanced Database Analytics**
+
+**Automated performance analysis:**
+```bash
+# 🏆 Performance scoring (A+ to F grades)
+python src/analytics.py --performance-report
+
+# 🔍 Anomaly detection
+python src/analytics.py --anomaly-detection --hours 24
+
+# 🔮 Predictive maintenance alerts
+python src/analytics.py --predictive-analysis
+
+# 📈 Growth metrics and trends
+python src/analytics.py --growth-analysis --days 7
+
+# 🏢 Fleet analytics with comparative insights
+python src/analytics.py --fleet-comparison
+```
+
+**Database features:**
+- 💾 **SQLite database** for advanced data storage and querying
+- 📅 **Automated hourly and daily aggregations** for trend analysis
+- 🔄 **Automatic backup system** with configurable retention
+- 📊 **Statistical analysis** with moving averages and variance calculations
+- 🚨 **Alert system** for temperature, hashrate, and efficiency issues
+- 📈 **Performance scoring** based on multiple weighted factors
+- 🔍 **Anomaly detection** using statistical deviation analysis
+
+### 🏆 **Fleet Dashboard**
 - **Health Overview:** Visual fleet status with progress bars
 - **Performance Metrics:** Total hashrate, power consumption, efficiency ratings
 - **Temperature Monitoring:** Average ASIC and VR temperatures
 - **Mining Statistics:** Shares accepted/rejected, rejection rates
 
-### Individual Miner Panels
+### 💻 **Individual Miner Panels**
 - **Performance Bars:** Visual hashrate percentage indicators
 - **Comprehensive Metrics:** All voltage readings, frequency settings, power consumption
 - **System Status:** Fan speed, memory usage, WiFi signal, uptime

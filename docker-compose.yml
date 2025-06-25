@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Basic monitoring (legacy - use for minimal setups only)
   bitaxe-monitor:
     build: .
     container_name: bitaxe-monitor
@@ -18,10 +19,12 @@ services:
       - LC_ALL=en_US.UTF-8
     networks:
       - bitaxe-network
+    profiles:
+      - basic
     # Uncomment if you need to access the network interface directly
     # network_mode: host
     
-  # Enhanced monitoring with database and analytics
+  # Enhanced monitoring with database and analytics (DEFAULT)
   bitaxe-enhanced:
     build: .
     container_name: bitaxe-enhanced
@@ -40,10 +43,8 @@ services:
       - LC_ALL=en_US.UTF-8
     networks:
       - bitaxe-network
-    profiles:
-      - enhanced
 
-  # Web dashboard with responsive UI and API
+  # Web dashboard with responsive UI and API (DEFAULT)
   bitaxe-web:
     build: .
     container_name: bitaxe-web
@@ -63,11 +64,9 @@ services:
       - LANG=en_US.UTF-8
       - LC_ALL=en_US.UTF-8
     depends_on:
-      - bitaxe-monitor
+      - bitaxe-enhanced
     networks:
       - bitaxe-network
-    profiles:
-      - web
 
 networks:
   bitaxe-network:

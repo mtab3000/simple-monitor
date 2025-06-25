@@ -16,26 +16,27 @@ cd simple-monitor
 cp examples/config.example.yaml config.yaml
 # Edit config.yaml with your Bitaxe IP addresses
 
-# Start basic monitoring
+# 🚀 ENHANCED MONITORING (DEFAULT)
+# Includes: Database analytics, web dashboard, optimization analysis
 docker-compose up -d
 
-# Start with web dashboard
-docker-compose --profile web up -d
-
-# Start with enhanced analytics
-docker-compose --profile enhanced up -d
-
-# All features together
-docker-compose --profile enhanced --profile web up -d
+# 🔧 Basic monitoring only (minimal setup)
+docker-compose --profile basic up -d
 ```
 
-### Access Your Dashboard
+### Access Your Dashboards
 ```bash
-# Terminal dashboard
-docker-compose exec bitaxe-monitor python viewer.py --live
-
-# Web dashboard (if using --profile web)
+# 🌐 Web Dashboard (PRIMARY - DEFAULT)
 # Open http://localhost:80 in browser
+
+# 📊 Terminal Dashboard
+docker-compose exec bitaxe-enhanced python viewer.py --live
+
+# 🎯 Mining Optimization Analysis
+docker-compose exec bitaxe-enhanced python src/optimization_analyzer.py --hours 24 --show-chart
+
+# 📈 Database Analytics
+docker-compose exec bitaxe-enhanced python src/analytics.py --report
 ```
 
 ## 🐍 Manual Python Installation
