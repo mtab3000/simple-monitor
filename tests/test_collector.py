@@ -5,6 +5,7 @@ import tempfile
 import json
 import csv
 import os
+import requests
 from unittest.mock import Mock, patch, mock_open
 from pathlib import Path
 
@@ -40,7 +41,7 @@ class TestBitaxeCollector:
         """Create a mock API response from Bitaxe."""
         return {
             'hostname': 'bitaxe1',
-            'hashRate': 934500000000,  # 934.5 GH/s in H/s
+            'hashRate': 934.5,  # 934.5 GH/s
             'temp': 60.0,
             'vrTemp': 53.0,
             'power': 14.0,
@@ -165,7 +166,7 @@ class TestBitaxeCollector:
         mock_get.return_value = mock_response
         
         miner_config = {'ip': '192.168.1.45', 'expected_hashrate_ghs': 934.3}
-        result = collector.fetch_miner_data(miner_config)
+        result = collector.get_miner_data(miner_config['ip'])
         
         assert result['status'] == 'online'
         assert result['miner_ip'] == '192.168.1.45'
@@ -175,77 +176,77 @@ class TestBitaxeCollector:
     @patch('requests.Session.get')
     def test_fetch_miner_data_timeout(self, mock_get, collector):
         """Test miner data fetching with timeout."""
-        mock_get.side_effect = Exception("Timeout")
+        mock_get.side_effect = requests.exceptions.Timeout("Timeout")
         
         miner_config = {'ip': '192.168.1.45', 'expected_hashrate_ghs': 934.3}
-        result = collector.fetch_miner_data(miner_config)
+        result = collector.get_miner_data(miner_config['ip'])
         
-        assert result['status'] == 'connection_failed'
+        assert result['status'] == 'timeout'
         assert result['miner_ip'] == '192.168.1.45'
 
     def test_determine_status_online(self, collector):
         """Test status determination for online miner."""
         data = {
-            'hashrate_ghs': 934.5,
-            'temp_asic_c': 60.0,
-            'temp_vr_c': 53.0,
-            'shares_rejected': 1,
-            'shares_accepted': 2285,
-            'wifi_rssi': -52,
-            'power_w': 14.0
+            'hashRate': 934500000000,  # Raw API format
+            'temp': 60.0,
+            'power': 14.0,
+            'sharesRejected': 1,
+            'sharesAccepted': 2285,
+            'wifiRSSI': -52,
+            'wifiStatus': 'connected'
         }
         
-        status = collector.determine_status(data)
+        status = collector.determine_status(data, data['hashRate'] / 1000000000, data['temp'])
         assert status == 'online'
 
     def test_determine_status_no_hashrate(self, collector):
         """Test status determination for no hashrate."""
         data = {
-            'hashrate_ghs': 0,
-            'temp_asic_c': 60.0,
-            'temp_vr_c': 53.0,
-            'shares_rejected': 1,
-            'shares_accepted': 2285,
-            'wifi_rssi': -52,
-            'power_w': 14.0
+            'hashRate': 0,
+            'temp': 60.0,
+            'power': 14.0,
+            'sharesRejected': 1,
+            'sharesAccepted': 2285,
+            'wifiRSSI': -52,
+            'wifiStatus': 'connected'
         }
         
-        status = collector.determine_status(data)
+        status = collector.determine_status(data, data['hashRate'], data['temp'])
         assert status == 'no_hashrate'
 
     def test_determine_status_overheating(self, collector):
         """Test status determination for overheating."""
         data = {
-            'hashrate_ghs': 934.5,
-            'temp_asic_c': 90.0,  # Overheating
-            'temp_vr_c': 53.0,
-            'shares_rejected': 1,
-            'shares_accepted': 2285,
-            'wifi_rssi': -52,
-            'power_w': 14.0
+            'hashRate': 934500000000,
+            'temp': 90.0,  # Overheating
+            'power': 14.0,
+            'sharesRejected': 1,
+            'sharesAccepted': 2285,
+            'wifiRSSI': -52,
+            'wifiStatus': 'connected'
         }
         
-        status = collector.determine_status(data)
+        status = collector.determine_status(data, data['hashRate'] / 1000000000, data['temp'])
         assert status == 'overheating'
 
     def test_determine_status_high_rejection(self, collector):
         """Test status determination for high rejection rate."""
         data = {
-            'hashrate_ghs': 934.5,
-            'temp_asic_c': 60.0,
-            'temp_vr_c': 53.0,
-            'shares_rejected': 250,  # High rejection
-            'shares_accepted': 2000,
-            'wifi_rssi': -52,
-            'power_w': 14.0
+            'hashRate': 934500000000,
+            'temp': 60.0,
+            'power': 14.0,
+            'sharesRejected': 250,  # High rejection
+            'sharesAccepted': 2000,
+            'wifiRSSI': -52,
+            'wifiStatus': 'connected'
         }
         
-        status = collector.determine_status(data)
+        status = collector.determine_status(data, data['hashRate'] / 1000000000, data['temp'])
         assert status == 'high_rejection'
 
     def test_csv_initialization(self, collector):
         """Test CSV file initialization."""
-        collector.initialize_csv()
+        collector.write_csv_header()
         
         assert os.path.exists(collector.csv_path)
         
@@ -259,7 +260,7 @@ class TestBitaxeCollector:
 
     def test_append_metrics_to_csv(self, collector):
         """Test appending metrics to CSV."""
-        collector.initialize_csv()
+        collector.write_csv_header()
         
         test_metrics = [
             {
@@ -285,7 +286,7 @@ class TestBitaxeCollector:
 
     def test_backup_creation(self, collector):
         """Test backup file creation."""
-        collector.initialize_csv()
+        collector.write_csv_header()
         
         # Add some data
         test_metrics = [
@@ -299,35 +300,43 @@ class TestBitaxeCollector:
         collector.append_metrics_to_csv_safe(test_metrics)
         
         # Create backup
-        backup_path = collector.create_backup()
+        collector.backup_csv_file()
         
-        assert backup_path is not None
-        assert os.path.exists(backup_path)
+        # Check that a backup was created in the backup directory
+        backups = list(collector.backup_dir.glob("metrics_backup_*.csv"))
+        assert len(backups) > 0
+        assert backups[0].exists()
 
     def test_validate_csv_structure_valid(self, collector):
         """Test CSV validation with valid file."""
-        collector.initialize_csv()
+        collector.write_csv_header()
         
-        is_valid, message = collector.validate_csv_structure()
+        is_valid, message = collector.validate_csv_file(collector.csv_path)
         assert is_valid is True
-        assert "CSV structure is valid" in message
+        assert "File is valid" in message
 
     def test_validate_csv_structure_missing_file(self, collector):
         """Test CSV validation with missing file."""
         # Don't initialize CSV
-        is_valid, message = collector.validate_csv_structure()
-        assert is_valid is False
-        assert "CSV file does not exist" in message
+        is_valid, message = collector.validate_csv_file(collector.csv_path)
+        assert is_valid is True
+        assert "File doesn't exist yet" in message
 
 
 class TestCollectorIntegration:
     """Integration tests for the collector."""
+    
+    @pytest.fixture
+    def temp_dir(self):
+        """Create a temporary directory for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield temp_dir
 
     @pytest.mark.integration
     def test_full_collection_cycle(self, temp_dir):
         """Test a complete collection cycle."""
         config = {
-            'miners': [{'ip': '192.168.1.45', 'expected_hashrate_ghs': 934.3}],
+            'miners': ['192.168.1.45'],
             'poll_interval': 1,
             'csv_path': os.path.join(temp_dir, 'metrics.csv'),
             'timeout': 5,
@@ -349,7 +358,7 @@ class TestCollectorIntegration:
                     'power': 14.0
                 }
                 
-                with patch.object(collector, 'fetch_miner_data') as mock_fetch:
+                with patch.object(collector, 'get_miner_data') as mock_fetch:
                     mock_fetch.return_value = {
                         'status': 'online',
                         'miner_ip': '192.168.1.45',
@@ -362,7 +371,9 @@ class TestCollectorIntegration:
                     }
                     
                     # Run one collection cycle
-                    collector.collect_once()
+                    collector.write_csv_header()
+                    all_metrics = collector.collect_all_miners()
+                    collector.append_metrics_to_csv_safe(all_metrics)
                     
                     # Verify data was collected
                     assert os.path.exists(collector.csv_path)
