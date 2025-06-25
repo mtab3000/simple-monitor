@@ -7,8 +7,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./config.yaml:/app/config.yaml:ro
-      - ./data:/app/data
-      - ./backups:/app/backups
+      - bitaxe-data:/app/data
+      - bitaxe-backups:/app/backups
       - ./metrics.csv:/app/metrics.csv
       - ./hostname_cache.json:/app/hostname_cache.json
     environment:
@@ -29,8 +29,8 @@ services:
     command: ["python", "enhanced_monitor.py"]
     volumes:
       - ./config.yaml:/app/config.yaml:ro
-      - ./data:/app/data
-      - ./backups:/app/backups
+      - bitaxe-data:/app/data
+      - bitaxe-backups:/app/backups
       - ./metrics.csv:/app/metrics.csv
       - ./hostname_cache.json:/app/hostname_cache.json
     environment:
@@ -53,7 +53,7 @@ services:
       - "8080:8080"
     volumes:
       - ./config.yaml:/app/config.yaml:ro
-      - ./data:/app/data:ro
+      - bitaxe-data:/app/data:ro
       - ./metrics.csv:/app/metrics.csv:ro
       - ./hostname_cache.json:/app/hostname_cache.json:ro
       - ./web:/app/web:ro
@@ -75,4 +75,6 @@ networks:
 
 volumes:
   bitaxe-data:
+    driver: local
   bitaxe-backups:
+    driver: local
