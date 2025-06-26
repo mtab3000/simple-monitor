@@ -212,7 +212,7 @@ class EnhancedBitaxeCollector:
             
             hashrate_ghs = float(data.get('hashRate', 0))
             power_w = float(data.get('power', 0))
-            efficiency_j_th = round((power_w * 1000) / (hashrate_ghs * 1000), 2) if hashrate_ghs > 0 else 0
+            efficiency_j_th = round((power_w / hashrate_ghs) * 1000, 2) if hashrate_ghs > 0 else 0
             
             shares_accepted = int(data.get('sharesAccepted', 0))
             shares_rejected = int(data.get('sharesRejected', 0))
