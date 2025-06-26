@@ -600,7 +600,7 @@ class BitaxeCollector:
                     total_power = sum(m['power_w'] for m in online_miners)
                     avg_temp_asic = sum(m['temp_asic_c'] for m in online_miners) / len(online_miners) if online_miners else 0
                     avg_temp_vr = sum(m['temp_vr_c'] for m in online_miners) / len(online_miners) if online_miners else 0
-                    fleet_efficiency = total_power / (total_hashrate / 1000) if total_hashrate > 0 else 0  # J/TH
+                    fleet_efficiency = (total_power / total_hashrate) * 1000 if total_hashrate > 0 else 0  # J/TH
                     
                     print(f"Fleet: {len(online_miners)}/{len(all_metrics)} online, "
                           f"{total_hashrate:.1f} GH/s, {total_power:.1f}W, "

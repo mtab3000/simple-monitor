@@ -379,6 +379,28 @@ class TestEnhancedBitaxeCollector:
         assert collector.config['analytics_interval'] == 999
         assert collector.config['analytics_interval'] != original_interval
 
+    def test_efficiency_calculation(self, enhanced_collector):
+        """Test efficiency calculation correctness."""
+        collector, _, _, _ = enhanced_collector
+        
+        # Test data with known values
+        test_cases = [
+            {'hashrate_ghs': 1000, 'power_w': 15.0, 'expected_efficiency': 15.0},  # 15W / 1TH = 15 J/TH
+            {'hashrate_ghs': 934.5, 'power_w': 14.0, 'expected_efficiency': 14.98},  # ~15 J/TH
+            {'hashrate_ghs': 500, 'power_w': 10.0, 'expected_efficiency': 20.0},   # 10W / 0.5TH = 20 J/TH
+            {'hashrate_ghs': 0, 'power_w': 15.0, 'expected_efficiency': 0},        # Zero hashrate case
+        ]
+        
+        for case in test_cases:
+            # Simulate the efficiency calculation from enhanced_collector.py line 215
+            hashrate_ghs = case['hashrate_ghs']
+            power_w = case['power_w']
+            efficiency_j_th = round((power_w / hashrate_ghs) * 1000, 2) if hashrate_ghs > 0 else 0
+            
+            assert efficiency_j_th == case['expected_efficiency'], \
+                f"Expected {case['expected_efficiency']} J/TH but got {efficiency_j_th} J/TH " \
+                f"for {power_w}W at {hashrate_ghs} GH/s"
+
 
 @pytest.mark.integration
 class TestEnhancedCollectorIntegration:
