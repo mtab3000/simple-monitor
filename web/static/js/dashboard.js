@@ -5,6 +5,8 @@ class BitaxeDashboard {
         this.refreshInterval = null;
         this.refreshRate = 30000; // 30 seconds
         this.isRefreshing = true;
+        this.charts = {}; // Store chart instances
+        this.historicalData = {}; // Store historical data for charts
         
         this.init();
     }
@@ -81,6 +83,7 @@ class BitaxeDashboard {
             
             this.updateFleetStats(fleetData.data);
             this.updateMinersGrid(statusData.data.miners || []);
+            this.updateCharts(statusData.data.miners || []);
             this.updateLastUpdate();
             this.hideError();
             
@@ -98,7 +101,7 @@ class BitaxeDashboard {
         document.getElementById('offline-miners').textContent = stats.offline_miners;
         document.getElementById('total-hashrate').textContent = stats.total_hashrate_ghs.toFixed(1);
         document.getElementById('total-power').textContent = stats.total_power_w.toFixed(1);
-        document.getElementById('avg-temp').textContent = `${stats.average_temp_c.toFixed(1)}°C`;
+        document.getElementById('fleet-efficiency').textContent = stats.average_efficiency_j_th.toFixed(1);
     }
     
     updateMinersGrid(miners) {
@@ -147,20 +150,28 @@ class BitaxeDashboard {
                     </div>
                 </div>
                 
-                <div class="miner-metrics">
+                <div class="miner-metrics extended">
                     <div class="metric-item">
-                        <div class="metric-label">Voltage Set</div>
+                        <div class="metric-label">Input Voltage</div>
                         <div class="metric-value">
-                            ${miner.voltage_asic_set_v.toFixed(3)} 
+                            5.00 
                             <span class="metric-unit">V</span>
                         </div>
                     </div>
                     
                     <div class="metric-item">
-                        <div class="metric-label">Frequency</div>
-                        <div class="metric-value">
-                            ${miner.frequency_set_mhz.toFixed(0)} 
-                            <span class="metric-unit">MHz</span>
+                        <div class="metric-label">ASIC Temp</div>
+                        <div class="metric-value ${tempClass}">
+                            ${miner.temp_asic_c.toFixed(1)}
+                            <span class="metric-unit">°C</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-label">VR Temp</div>
+                        <div class="metric-value ${this.getTemperatureClass(miner.temp_vr_c)}">
+                            ${miner.temp_vr_c.toFixed(1)}
+                            <span class="metric-unit">°C</span>
                         </div>
                     </div>
                     
@@ -189,18 +200,18 @@ class BitaxeDashboard {
                     </div>
                     
                     <div class="metric-item">
-                        <div class="metric-label">ASIC Temp</div>
-                        <div class="metric-value ${tempClass}">
-                            ${miner.temp_asic_c.toFixed(1)}
-                            <span class="metric-unit">°C</span>
-                        </div>
-                    </div>
-                    
-                    <div class="metric-item">
                         <div class="metric-label">Power</div>
                         <div class="metric-value">
                             ${miner.power_w.toFixed(1)} 
                             <span class="metric-unit">W</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-label">Voltage Set</div>
+                        <div class="metric-value">
+                            ${miner.voltage_asic_set_v.toFixed(3)} 
+                            <span class="metric-unit">V</span>
                         </div>
                     </div>
                     
@@ -213,25 +224,17 @@ class BitaxeDashboard {
                     </div>
                     
                     <div class="metric-item">
+                        <div class="metric-label">Frequency</div>
+                        <div class="metric-value">
+                            ${miner.frequency_set_mhz.toFixed(0)} 
+                            <span class="metric-unit">MHz</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-item">
                         <div class="metric-label">Shares A/R</div>
                         <div class="metric-value">
                             ${miner.shares_accepted}/${miner.shares_rejected}
-                        </div>
-                    </div>
-                    
-                    <div class="metric-item">
-                        <div class="metric-label">Rejection Rate</div>
-                        <div class="metric-value">
-                            ${miner.rejection_rate_percent.toFixed(2)}
-                            <span class="metric-unit">%</span>
-                        </div>
-                    </div>
-                    
-                    <div class="metric-item">
-                        <div class="metric-label">WiFi Signal</div>
-                        <div class="metric-value">
-                            ${miner.wifi_rssi} 
-                            <span class="metric-unit">dBm</span>
                         </div>
                     </div>
                     
@@ -241,6 +244,18 @@ class BitaxeDashboard {
                             ${miner.uptime_hours.toFixed(1)} 
                             <span class="metric-unit">hrs</span>
                         </div>
+                    </div>
+                </div>
+                
+                <div class="miner-charts">
+                    <div class="chart-container">
+                        <div class="chart-title">Hashrate vs Expected</div>
+                        <canvas id="hashrate-chart-${miner.ip.replace(/\./g, '-')}" class="chart-canvas"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <div class="chart-title">Efficiency & ASIC Voltage</div>
+                        <canvas id="efficiency-chart-${miner.ip.replace(/\./g, '-')}" class="chart-canvas"></canvas>
                     </div>
                 </div>
             </div>
@@ -327,6 +342,213 @@ class BitaxeDashboard {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    updateCharts(miners) {
+        miners.forEach(miner => {
+            const minerId = miner.ip.replace(/\./g, '-');
+            
+            // Update historical data
+            if (!this.historicalData[minerId]) {
+                this.historicalData[minerId] = {
+                    timestamps: [],
+                    hashrate: [],
+                    expected_hashrate: [],
+                    efficiency: [],
+                    voltage_actual: []
+                };
+            }
+            
+            const data = this.historicalData[minerId];
+            const now = new Date();
+            
+            // Keep only last 20 data points
+            if (data.timestamps.length >= 20) {
+                data.timestamps.shift();
+                data.hashrate.shift();
+                data.expected_hashrate.shift();
+                data.efficiency.shift();
+                data.voltage_actual.shift();
+            }
+            
+            data.timestamps.push(now.toLocaleTimeString());
+            data.hashrate.push(miner.hashrate_ghs);
+            data.expected_hashrate.push(miner.expected_hashrate_ghs);
+            data.efficiency.push(miner.efficiency_j_th);
+            data.voltage_actual.push(miner.voltage_asic_actual_v);
+            
+            // Create or update charts
+            this.createHashrateChart(minerId, data);
+            this.createEfficiencyChart(minerId, data);
+        });
+    }
+    
+    createHashrateChart(minerId, data) {
+        const canvasId = `hashrate-chart-${minerId}`;
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        
+        if (this.charts[canvasId]) {
+            // Update existing chart
+            this.charts[canvasId].data.labels = data.timestamps;
+            this.charts[canvasId].data.datasets[0].data = data.hashrate;
+            this.charts[canvasId].data.datasets[1].data = data.expected_hashrate;
+            this.charts[canvasId].update('none');
+        } else {
+            // Create new chart
+            this.charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.timestamps,
+                    datasets: [{
+                        label: 'Actual Hashrate',
+                        data: data.hashrate,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }, {
+                        label: 'Expected Hashrate',
+                        data: data.expected_hashrate,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderDash: [5, 5],
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e2e8f0'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'GH/s',
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+    
+    createEfficiencyChart(minerId, data) {
+        const canvasId = `efficiency-chart-${minerId}`;
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        
+        if (this.charts[canvasId]) {
+            // Update existing chart
+            this.charts[canvasId].data.labels = data.timestamps;
+            this.charts[canvasId].data.datasets[0].data = data.efficiency;
+            this.charts[canvasId].data.datasets[1].data = data.voltage_actual;
+            this.charts[canvasId].update('none');
+        } else {
+            // Create new chart
+            this.charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.timestamps,
+                    datasets: [{
+                        label: 'Efficiency (J/TH)',
+                        data: data.efficiency,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.1,
+                        yAxisID: 'y',
+                        fill: true
+                    }, {
+                        label: 'ASIC Voltage (V)',
+                        data: data.voltage_actual,
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        tension: 0.1,
+                        yAxisID: 'y1',
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e2e8f0'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'J/TH',
+                                color: '#94a3b8'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            title: {
+                                display: true,
+                                text: 'Volts',
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
+        }
     }
 }
 

@@ -6,6 +6,7 @@
     <title>⚡ Bitaxe Gamma Monitor Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 <body>
     <div class="container">
@@ -86,11 +87,11 @@
                 
                 <div class="fleet-card">
                     <div class="fleet-card-icon">
-                        <i class="fas fa-thermometer-half"></i>
+                        <i class="fas fa-leaf"></i>
                     </div>
                     <div class="fleet-card-content">
-                        <div class="fleet-card-value" id="avg-temp">--</div>
-                        <div class="fleet-card-label">Avg Temp (°C)</div>
+                        <div class="fleet-card-value" id="fleet-efficiency">--</div>
+                        <div class="fleet-card-label">Fleet Efficiency (J/TH)</div>
                     </div>
                 </div>
             </div>

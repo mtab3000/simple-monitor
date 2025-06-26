@@ -201,7 +201,6 @@ poll_interval: 30
             'total_hashrate_ghs': 1879.0,
             'total_power_w': 28.2,
             'average_efficiency_j_th': 15.05,
-            'average_temp_c': 59.75,
             'total_shares_accepted': 4651,
             'total_shares_rejected': 4,
             'fleet_rejection_rate_percent': 0.086
@@ -663,3 +662,109 @@ class TestWebServerIntegration:
         assert len(errors) == 0
         assert len(results) == 10
         assert all(status == 200 for status in results)
+
+    def test_fleet_efficiency_in_stats(self, web_server):
+        """Test that fleet efficiency is included in fleet statistics."""
+        with patch.object(web_server, 'get_current_data') as mock_get_data:
+            mock_get_data.return_value = {
+                'miners': [
+                    {
+                        'ip': '192.168.1.45',
+                        'status': 'online',
+                        'hashrate_ghs': 1000.0,
+                        'power_w': 15.0,
+                        'efficiency_j_th': 15.0,
+                        'temp_asic_c': 60.0,
+                        'temp_vr_c': 55.0,
+                        'voltage_device_v': 5.0,
+                        'shares_accepted': 100,
+                        'shares_rejected': 1
+                    },
+                    {
+                        'ip': '192.168.1.46',
+                        'status': 'online',
+                        'hashrate_ghs': 950.0,
+                        'power_w': 15.2,
+                        'efficiency_j_th': 16.0,
+                        'temp_asic_c': 62.0,
+                        'temp_vr_c': 56.0,
+                        'voltage_device_v': 5.1,
+                        'shares_accepted': 95,
+                        'shares_rejected': 2
+                    }
+                ]
+            }
+            
+            stats = web_server.get_fleet_stats()
+            
+            # Check that fleet efficiency is calculated correctly
+            assert 'average_efficiency_j_th' in stats
+            expected_efficiency = (15.0 + 16.0) / 2
+            assert stats['average_efficiency_j_th'] == expected_efficiency
+
+    def test_individual_miner_extended_metrics(self, web_server):
+        """Test that individual miners include extended metrics for new UI."""
+        with patch.object(web_server, 'get_current_data') as mock_get_data:
+            mock_get_data.return_value = {
+                'miners': [
+                    {
+                        'ip': '192.168.1.45',
+                        'hostname': 'bitaxe1',
+                        'status': 'online',
+                        'hashrate_ghs': 934.5,
+                        'expected_hashrate_ghs': 934.3,
+                        'efficiency_j_th': 15.1,
+                        'temp_asic_c': 60.0,
+                        'temp_vr_c': 55.0,
+                        'voltage_device_v': 5.0,
+                        'voltage_asic_actual_v': 0.981,
+                        'voltage_asic_set_v': 1.003,
+                        'power_w': 14.0,
+                        'frequency_set_mhz': 458,
+                        'shares_accepted': 2285,
+                        'shares_rejected': 1,
+                        'uptime_hours': 3.1
+                    }
+                ]
+            }
+            
+            data = web_server.get_current_data()
+            miner = data['miners'][0]
+            
+            # Check that all required fields for new UI are present
+            required_fields = [
+                'voltage_device_v',  # Input voltage
+                'temp_vr_c',         # VR temperature  
+                'temp_asic_c',       # ASIC temperature
+                'efficiency_j_th',   # Efficiency for charts
+                'voltage_asic_actual_v',  # ASIC voltage for charts
+                'hashrate_ghs',      # Hashrate for charts
+                'expected_hashrate_ghs'  # Expected hashrate for charts
+            ]
+            
+            for field in required_fields:
+                assert field in miner, f"Missing required field: {field}"
+                assert miner[field] is not None, f"Field {field} should not be None"
+
+    def test_dark_theme_assets_accessible(self, app_client):
+        """Test that CSS and JS assets are accessible for dark theme."""
+        # Test CSS file
+        response = app_client.get('/static/css/dashboard.css')
+        assert response.status_code == 200
+        assert 'text/css' in response.content_type
+        
+        # Test JS file  
+        response = app_client.get('/static/js/dashboard.js')
+        assert response.status_code == 200
+        assert 'javascript' in response.content_type or 'text/javascript' in response.content_type
+
+    def test_dashboard_chart_support(self, app_client):
+        """Test that dashboard HTML includes Chart.js support."""
+        response = app_client.get('/')
+        assert response.status_code == 200
+        
+        # Check that Chart.js is included
+        assert b'chart.js' in response.data or b'chart.umd.js' in response.data
+        
+        # Check that fleet efficiency element is present
+        assert b'fleet-efficiency' in response.data

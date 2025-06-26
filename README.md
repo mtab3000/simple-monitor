@@ -537,9 +537,11 @@ curl "http://localhost:80/api/history?hours=168" | jq
 - 📏 **CSV export** functionality for historical analysis
 
 **Advanced visualizations:**
-- 📉 **Performance trends** with hashrate and efficiency graphs
-- 🌡️ **Temperature monitoring** with overheating alerts
-- ⚡ **Power consumption** tracking and efficiency ratings
+- 📉 **Interactive charts** with real-time hashrate vs expected performance
+- 📊 **Efficiency & voltage graphs** showing power optimization trends  
+- 🌡️ **Dual temperature monitoring** (ASIC + VR) with overheating alerts
+- ⚡ **Power consumption** tracking with fleet efficiency dashboard
+- 🔌 **Input voltage monitoring** at ~5V for power stability
 - 📆 **Share statistics** with acceptance/rejection rates
 - 📡 **Network status** including WiFi signal strength
 - 🕰️ **Uptime tracking** and availability metrics

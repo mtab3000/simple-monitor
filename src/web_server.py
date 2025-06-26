@@ -234,10 +234,10 @@ class BitaxeWebServer:
             return {
                 'total_miners': 0,
                 'online_miners': 0,
+                'offline_miners': 0,
                 'total_hashrate_ghs': 0,
                 'total_power_w': 0,
                 'average_efficiency_j_th': 0,
-                'average_temp_c': 0,
                 'total_shares_accepted': 0,
                 'total_shares_rejected': 0,
                 'fleet_rejection_rate_percent': 0
@@ -256,10 +256,8 @@ class BitaxeWebServer:
         # Calculate averages (only for online miners)
         if online_count > 0:
             avg_efficiency = sum(m['efficiency_j_th'] for m in online_miners) / online_count
-            avg_temp = sum(m['temp_asic_c'] for m in online_miners) / online_count
         else:
             avg_efficiency = 0
-            avg_temp = 0
         
         # Calculate fleet rejection rate
         total_shares = total_shares_accepted + total_shares_rejected
@@ -272,7 +270,6 @@ class BitaxeWebServer:
             'total_hashrate_ghs': round(total_hashrate, 2),
             'total_power_w': round(total_power, 2),
             'average_efficiency_j_th': round(avg_efficiency, 2),
-            'average_temp_c': round(avg_temp, 1),
             'total_shares_accepted': total_shares_accepted,
             'total_shares_rejected': total_shares_rejected,
             'fleet_rejection_rate_percent': round(fleet_rejection_rate, 3)
