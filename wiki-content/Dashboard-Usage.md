@@ -1,3 +1,11 @@
+# 🌐 Web Dashboard Usage Guide
+
+## 📸 Dashboard Preview
+
+![Web Dashboard Screenshot](../docs/dashboard-screenshot.svg)
+
+*Live web dashboard showing real-time fleet monitoring with individual miner status, performance metrics, and system health*
+
 # Dashboard Usage
 
 ## Terminal Dashboard
