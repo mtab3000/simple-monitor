@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#1a1a1a"/>
+  
+  <!-- Browser chrome -->
+  <rect x="0" y="0" width="1200" height="60" fill="#2d2d2d"/>
+  <circle cx="20" cy="30" r="8" fill="#ff5f57"/>
+  <circle cx="45" cy="30" r="8" fill="#ffbd2e"/>
+  <circle cx="70" cy="30" r="8" fill="#28ca42"/>
+  <rect x="100" y="20" width="400" height="20" rx="10" fill="#404040"/>
+  <text x="110" y="33" font-family="monospace" font-size="11" fill="#ccc">http://localhost:80</text>
+  
+  <!-- Header -->
+  <rect x="0" y="60" width="1200" height="80" fill="#2a2a2a"/>
+  <text x="40" y="110" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff">
+    ⚡ Bitaxe Gamma Monitor Dashboard
+  </text>
+  <text x="1050" y="110" font-family="monospace" font-size="14" fill="#888">
+    22:40:59 UTC
+  </text>
+  
+  <!-- Fleet Status Cards -->
+  <g transform="translate(40, 160)">
+    <!-- Total Miners Card -->
+    <rect width="260" height="120" rx="8" fill="#2d3748" stroke="#4a5568" stroke-width="1"/>
+    <text x="20" y="30" font-family="Arial, sans-serif" font-size="14" fill="#a0aec0">Total Miners</text>
+    <text x="20" y="65" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#48bb78">3</text>
+    <text x="20" y="90" font-family="Arial, sans-serif" font-size="12" fill="#718096">All Online</text>
+    <circle cx="220" cy="30" r="6" fill="#48bb78"/>
+    
+    <!-- Total Hashrate Card -->
+    <rect x="280" width="260" height="120" rx="8" fill="#2d3748" stroke="#4a5568" stroke-width="1"/>
+    <text x="300" y="30" font-family="Arial, sans-serif" font-size="14" fill="#a0aec0">Total Hashrate</text>
+    <text x="300" y="65" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#4299e1">2053</text>
+    <text x="300" y="90" font-family="Arial, sans-serif" font-size="12" fill="#718096">GH/s</text>
+    
+    <!-- Total Power Card -->
+    <rect x="560" width="260" height="120" rx="8" fill="#2d3748" stroke="#4a5568" stroke-width="1"/>
+    <text x="580" y="30" font-family="Arial, sans-serif" font-size="14" fill="#a0aec0">Total Power</text>
+    <text x="580" y="65" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#ed8936">43.7</text>
+    <text x="580" y="90" font-family="Arial, sans-serif" font-size="12" fill="#718096">Watts</text>
+    
+    <!-- Fleet Efficiency Card -->
+    <rect x="840" width="260" height="120" rx="8" fill="#2d3748" stroke="#4a5568" stroke-width="1"/>
+    <text x="860" y="30" font-family="Arial, sans-serif" font-size="14" fill="#a0aec0">Fleet Efficiency</text>
+    <text x="860" y="65" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#9f7aea">21.3</text>
+    <text x="860" y="90" font-family="Arial, sans-serif" font-size="12" fill="#718096">J/TH</text>
+  </g>
+  
+  <!-- Individual Miner Cards -->
+  <g transform="translate(40, 320)">
+    <!-- Miner 1 -->
+    <rect width="360" height="180" rx="8" fill="#2d3748" stroke="#4a5568" stroke-width="1"/>
+    <rect x="0" y="0" width="360" height="40" rx="8" fill="#48bb78"/>
+    <text x="20" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff">
+      bitaxe1 (192.168.1.45)
+    </text>
+    <circle cx="320" cy="20" r="6" fill="#ffffff"/>
+    
+    <text x="20" y="65" font-family="monospace" font-size="14" fill="#a0aec0">Hashrate:</text>
+    <text x="120" y="65" font-family="monospace" font-size="14" font-weight="bold" fill="#4299e1">766.2 GH/s</text>
+    <text x="240" y="65" font-family="monospace" font-size="12" fill="#718096">(82.0%)</text>
+    
+    <text x="20" y="85" font-family="monospace" font-size="14" fill="#a0aec0">Power:</text>
+    <text x="120" y="85" font-family="monospace" font-size="14" font-weight="bold" fill="#ed8936">14.6 W</text>
+    
+    <text x="20" y="105" font-family="monospace" font-size="14" fill="#a0aec0">Temp:</text>
+    <text x="120" y="105" font-family="monospace" font-size="14" font-weight="bold" fill="#f6ad55">60.0°C</text>
+    
+    <text x="20" y="125" font-family="monospace" font-size="14" fill="#a0aec0">Uptime:</text>
+    <text x="120" y="125" font-family="monospace" font-size="14" font-weight="bold" fill="#68d391">3.09h</text>
+    
+    <text x="20" y="145" font-family="monospace" font-size="14" fill="#a0aec0">Shares:</text>
+    <text x="120" y="145" font-family="monospace" font-size="14" font-weight="bold" fill="#48bb78">2233/8</text>
+    <text x="180" y="145" font-family="monospace" font-size="12" fill="#718096">(0.36% rejected)</text>
+    
+    <!-- Progress bar for hashrate -->
+    <rect x="20" y="155" width="320" height="8" rx="4" fill="#4a5568"/>
+    <rect x="20" y="155" width="262" height="8" rx="4" fill="#4299e1"/>
+  </g>
+  
+  <!-- Miner 2 -->
+  <g transform="translate(420, 320)">
+    <rect width="360" height="180" rx="8" fill="#2d3748" stroke="#4a5568" stroke-width="1"/>
+    <rect x="0" y="0" width="360" height="40" rx="8" fill="#48bb78"/>
+    <text x="20" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff">
+      bitaxe2 (192.168.1.46)
+    </text>
+    <circle cx="320" cy="20" r="6" fill="#ffffff"/>
+    
+    <text x="20" y="65" font-family="monospace" font-size="14" fill="#a0aec0">Hashrate:</text>
+    <text x="120" y="65" font-family="monospace" font-size="14" font-weight="bold" fill="#4299e1">1045.0 GH/s</text>
+    <text x="250" y="65" font-family="monospace" font-size="12" fill="#48bb78">(110.6%)</text>
+    
+    <text x="20" y="85" font-family="monospace" font-size="14" fill="#a0aec0">Power:</text>
+    <text x="120" y="85" font-family="monospace" font-size="14" font-weight="bold" fill="#ed8936">15.2 W</text>
+    
+    <text x="20" y="105" font-family="monospace" font-size="14" fill="#a0aec0">Temp:</text>
+    <text x="120" y="105" font-family="monospace" font-size="14" font-weight="bold" fill="#f6ad55">60.1°C</text>
+    
+    <text x="20" y="125" font-family="monospace" font-size="14" fill="#a0aec0">Uptime:</text>
+    <text x="120" y="125" font-family="monospace" font-size="14" font-weight="bold" fill="#68d391">0.90h</text>
+    
+    <text x="20" y="145" font-family="monospace" font-size="14" fill="#a0aec0">Shares:</text>
+    <text x="120" y="145" font-family="monospace" font-size="14" font-weight="bold" fill="#48bb78">720/1</text>
+    <text x="170" y="145" font-family="monospace" font-size="12" fill="#718096">(0.14% rejected)</text>
+    
+    <!-- Progress bar for hashrate -->
+    <rect x="20" y="155" width="320" height="8" rx="4" fill="#4a5568"/>
+    <rect x="20" y="155" width="320" height="8" rx="4" fill="#48bb78"/>
+  </g>
+  
+  <!-- Miner 3 -->
+  <g transform="translate(800, 320)">
+    <rect width="360" height="180" rx="8" fill="#2d3748" stroke="#4a5568" stroke-width="1"/>
+    <rect x="0" y="0" width="360" height="40" rx="8" fill="#f56565"/>
+    <text x="20" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff">
+      bitaxe3 (192.168.1.47)
+    </text>
+    <circle cx="320" cy="20" r="6" fill="#ffffff"/>
+    
+    <text x="20" y="65" font-family="monospace" font-size="14" fill="#a0aec0">Hashrate:</text>
+    <text x="120" y="65" font-family="monospace" font-size="14" font-weight="bold" fill="#f56565">242.0 GH/s</text>
+    <text x="240" y="65" font-family="monospace" font-size="12" fill="#f56565">(26.2%)</text>
+    
+    <text x="20" y="85" font-family="monospace" font-size="14" fill="#a0aec0">Power:</text>
+    <text x="120" y="85" font-family="monospace" font-size="14" font-weight="bold" fill="#ed8936">13.8 W</text>
+    
+    <text x="20" y="105" font-family="monospace" font-size="14" fill="#a0aec0">Temp:</text>
+    <text x="120" y="105" font-family="monospace" font-size="14" font-weight="bold" fill="#f6ad55">60.0°C</text>
+    
+    <text x="20" y="125" font-family="monospace" font-size="14" fill="#a0aec0">Uptime:</text>
+    <text x="120" y="125" font-family="monospace" font-size="14" font-weight="bold" fill="#68d391">3.10h</text>
+    
+    <text x="20" y="145" font-family="monospace" font-size="14" fill="#a0aec0">Shares:</text>
+    <text x="120" y="145" font-family="monospace" font-size="14" font-weight="bold" fill="#48bb78">1867/3</text>
+    <text x="180" y="145" font-family="monospace" font-size="12" fill="#718096">(0.16% rejected)</text>
+    
+    <!-- Progress bar for hashrate -->
+    <rect x="20" y="155" width="320" height="8" rx="4" fill="#4a5568"/>
+    <rect x="20" y="155" width="84" height="8" rx="4" fill="#f56565"/>
+    
+    <!-- Warning icon -->
+    <polygon points="330,60 340,80 320,80" fill="#f56565"/>
+    <text x="330" y="77" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">!</text>
+  </g>
+  
+  <!-- Status bar -->
+  <rect x="0" y="520" width="1200" height="40" fill="#2a2a2a"/>
+  <text x="40" y="545" font-family="monospace" font-size="14" fill="#48bb78">● Connected</text>
+  <text x="200" y="545" font-family="monospace" font-size="14" fill="#4299e1">Database: 1,247 records</text>
+  <text x="450" y="545" font-family="monospace" font-size="14" fill="#9f7aea">Last update: 2s ago</text>
+  <text x="700" y="545" font-family="monospace" font-size="14" fill="#ed8936">⚠ Miner 3 underperforming</text>
+  
+  <!-- Chart area -->
+  <rect x="40" y="580" width="1120" height="180" rx="8" fill="#2d3748" stroke="#4a5568" stroke-width="1"/>
+  <text x="60" y="605" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff">
+    Hashrate Trend (Last 2 Hours)
+  </text>
+  
+  <!-- Chart grid -->
+  <defs>
+    <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 20" fill="none" stroke="#4a5568" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  <rect x="60" y="620" width="1080" height="120" fill="url(#grid)"/>
+  
+  <!-- Chart lines -->
+  <polyline points="60,680 120,675 180,670 240,665 300,660 360,655 420,650 480,645 540,640 600,635 660,630 720,625 780,620 840,625 900,630 960,635 1020,640 1080,645 1140,650" 
+            fill="none" stroke="#4299e1" stroke-width="3"/>
+  <polyline points="60,700 120,695 180,690 240,685 300,680 360,675 420,670 480,665 540,660 600,655 660,650 720,645 780,640 840,635 900,640 960,645 1020,650 1080,655 1140,660" 
+            fill="none" stroke="#48bb78" stroke-width="3"/>
+  <polyline points="60,720 120,715 180,710 240,720 300,725 360,720 420,715 480,710 540,715 600,720 660,725 720,720 780,715 840,720 900,725 960,720 1020,715 1080,720 1140,725" 
+            fill="none" stroke="#f56565" stroke-width="3"/>
+  
+  <!-- Legend -->
+  <circle cx="900" cy="605" r="4" fill="#4299e1"/>
+  <text x="910" y="610" font-family="monospace" font-size="12" fill="#a0aec0">bitaxe1</text>
+  <circle cx="980" cy="605" r="4" fill="#48bb78"/>
+  <text x="990" y="610" font-family="monospace" font-size="12" fill="#a0aec0">bitaxe2</text>
+  <circle cx="1060" cy="605" r="4" fill="#f56565"/>
+  <text x="1070" y="610" font-family="monospace" font-size="12" fill="#a0aec0">bitaxe3</text>
+</svg>

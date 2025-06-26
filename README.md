@@ -97,6 +97,14 @@ A **beautiful, real-time monitoring solution** for Bitaxe Gamma mining devices w
 
 ## 🎬 Quick Demo
 
+### 📱 Live Web Dashboard
+
+![Dashboard Screenshot](docs/dashboard-screenshot.svg)
+
+*Real-time web dashboard showing fleet overview, individual miner status, and performance trends*
+
+## ⚡ Quick Start
+
 ```bash
 # 🔥 Start monitoring your Bitaxe fleet in 30 seconds
 git clone https://github.com/mtab3000/simple-monitor.git
@@ -108,6 +116,12 @@ docker-compose exec bitaxe-monitor python viewer.py --live
 # 🎯 Analyze mining optimization (NEW!)
 PYTHONIOENCODING=utf-8 python src/optimization_analyzer.py --hours 24 --show-chart
 ```
+
+### 📸 Web Dashboard Preview
+
+![Web Dashboard Screenshot](docs/dashboard-screenshot.svg)
+
+*Real-time web dashboard showing fleet overview, individual miner status, performance charts, and system health monitoring*
 
 ---
 
