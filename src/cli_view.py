@@ -174,7 +174,7 @@ def main():
     parser = argparse.ArgumentParser(description="Bitaxe Gamma Monitor CLI Viewer")
     parser.add_argument("--summary", action="store_true", help="Show current summary")
     parser.add_argument("--live", action="store_true", help="Show live updating view")
-    parser.add_argument("--csv", default="metrics.csv", help="CSV file path (default: metrics.csv)")
+    parser.add_argument("--csv", default="data/metrics.csv", help="CSV file path (default: data/metrics.csv)")
     
     args = parser.parse_args()
     

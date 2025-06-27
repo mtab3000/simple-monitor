@@ -7,4 +7,4 @@ timeout: 10
 max_retries: 3
 retry_delay: 2
 data_validation: true
-csv_path: metrics.csv
+csv_path: data/metrics.csv

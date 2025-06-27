@@ -11,10 +11,19 @@ from typing import Dict, Any, Optional
 
 def load_config():
     """Load and validate configuration from config.yaml"""
-    config_path = 'config.yaml'
+    # Support running from project root or src directory
+    config_paths = ['config/config.yaml', '../config/config.yaml']
+    config_path = None
     
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Configuration file '{config_path}' not found")
+    for path in config_paths:
+        if os.path.exists(path):
+            config_path = path
+            break
+    
+    if config_path is None:
+        raise FileNotFoundError(f"Configuration file not found. Tried: {', '.join(config_paths)}")
+    
+    # config_path is already validated above
     
     try:
         with open(config_path, 'r') as f:
