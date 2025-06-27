@@ -33,9 +33,7 @@ class EnhancedBitaxeCollector:
         db_path = self.config.get('database_path', 'data/bitaxe_monitor.db')
         self.db = BitaxeDatabase(db_path)
         
-        # Initialize analytics (skip for now to avoid multiple connections)
-        self.analyzer = None  # PerformanceAnalyzer(self.db)
-        self.predictor = None  # PredictiveAnalyzer(self.db)
+        # Analytics removed for simplicity
         
         # Setup HTTP session with retries
         self.session = self.create_session()
@@ -53,11 +51,7 @@ class EnhancedBitaxeCollector:
             'miners_total': len(self.config.get('miners', []))
         }
         
-        # Background task timers
-        self.last_analytics_run = 0
-        self.last_maintenance_run = 0
-        self.analytics_interval = self.config.get('analytics_interval', 1800)  # 30 minutes
-        self.maintenance_interval = self.config.get('maintenance_interval', 43200)  # 12 hours
+        # Simplified - no complex analytics
         
         self.logger.info("Enhanced collector initialized - Database-only mode")
     
@@ -244,40 +238,11 @@ class EnhancedBitaxeCollector:
                     import traceback
                     traceback.print_exc()
             
-            # Background tasks
-            self._run_background_tasks()
+            # Simple collection - no complex background tasks
             
         except Exception as e:
             self.logger.error(f"Collection cycle failed: {e}")
             self.collection_stats['failed_collections'] += 1
-    
-    def _run_background_tasks(self):
-        """Run analytics and maintenance tasks."""
-        current_time = time.time()
-        
-        # Only run background tasks if we have successful collections
-        if self.collection_stats['successful_collections'] == 0:
-            return
-        
-        # Analytics
-        if current_time - self.last_analytics_run > self.analytics_interval:
-            self.last_analytics_run = current_time
-            try:
-                self.logger.info("Running analytics...")
-                self.db.generate_hourly_stats()
-                self.logger.info("Analytics completed")
-            except Exception as e:
-                self.logger.warning(f"Analytics skipped due to error: {e}")
-        
-        # Maintenance  
-        if current_time - self.last_maintenance_run > self.maintenance_interval:
-            self.last_maintenance_run = current_time
-            try:
-                self.logger.info("Running maintenance...")
-                self.db.cleanup_old_data(days_to_keep=7)
-                self.logger.info("Maintenance completed")
-            except Exception as e:
-                self.logger.warning(f"Maintenance skipped due to error: {e}")
     
     def run(self):
         """Main collection loop."""

@@ -1,0 +1,24 @@
+# Simple BitAxe Monitor Configuration
+
+# Miner Configuration
+miners:
+  - ip: "192.168.1.100"
+    name: "BitAxe-1"
+  - ip: "192.168.1.101"
+    name: "BitAxe-2"
+
+# Collection Settings
+poll_interval: 30      # Seconds between data collection
+timeout: 10           # HTTP request timeout
+retries: 3            # Number of retries for failed requests
+
+# Database Configuration
+database_path: "data/bitaxe_monitor.db"
+
+# Logging Configuration
+log_level: "INFO"
+log_file: "data/collector.log"
+
+# Web Dashboard Configuration
+web_host: "0.0.0.0"
+web_port: 8080

@@ -1,4 +1,3 @@
-
 services:
   # Enhanced monitoring with database and analytics
   bitaxe-collector:
