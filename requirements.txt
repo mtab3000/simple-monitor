@@ -1,7 +1,6 @@
 # Core dependencies
 requests>=2.28.0
 PyYAML>=6.0
-rich>=12.0.0
 
 # Data analysis dependencies for optimization analyzer
 pandas>=1.5.0
@@ -13,11 +12,6 @@ urllib3>=1.26.0
 # Database and analytics dependencies
 # SQLite3 is built into Python, no additional dependencies needed
 
-# Web interface dependencies
-Flask>=2.3.0
-
 # Development dependencies (optional)
-# black>=22.0.0        # Code formatting
 pytest>=7.0.0         # Testing framework
 pytest-cov>=4.0.0     # Coverage reporting
-pylint>=2.15.0        # Code quality checker

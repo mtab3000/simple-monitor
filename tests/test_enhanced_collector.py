@@ -12,7 +12,7 @@ from datetime import datetime
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from src.enhanced_collector import EnhancedBitaxeCollector
+from enhanced_collector import EnhancedBitaxeCollector
 
 
 class TestEnhancedBitaxeCollector:

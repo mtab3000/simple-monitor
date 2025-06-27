@@ -1,69 +1,20 @@
 
 services:
-  # Basic monitoring (legacy - use for minimal setups only)
-  bitaxe-monitor:
+  # Enhanced monitoring with database and analytics
+  bitaxe-collector:
     build: .
-    container_name: bitaxe-monitor
+    container_name: bitaxe-collector
     restart: unless-stopped
+    command: ["python", "monitor.py"]
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - bitaxe-data:/app/data
       - bitaxe-backups:/app/backups
-      - ./metrics.csv:/app/metrics.csv
-      - ./hostname_cache.json:/app/hostname_cache.json
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONIOENCODING=utf-8
       - LANG=en_US.UTF-8
       - LC_ALL=en_US.UTF-8
-    networks:
-      - bitaxe-network
-    profiles:
-      - basic
-    # Uncomment if you need to access the network interface directly
-    # network_mode: host
-    
-  # Enhanced monitoring with database and analytics (DEFAULT)
-  bitaxe-enhanced:
-    build: .
-    container_name: bitaxe-enhanced
-    restart: unless-stopped
-    command: ["python", "enhanced_monitor.py"]
-    volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - bitaxe-data:/app/data
-      - bitaxe-backups:/app/backups
-      - ./metrics.csv:/app/metrics.csv
-      - ./hostname_cache.json:/app/hostname_cache.json
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONIOENCODING=utf-8
-      - LANG=en_US.UTF-8
-      - LC_ALL=en_US.UTF-8
-    networks:
-      - bitaxe-network
-
-  # Web dashboard with responsive UI and API (DEFAULT)
-  bitaxe-web:
-    build: .
-    container_name: bitaxe-web
-    restart: unless-stopped
-    command: ["python", "web_dashboard.py", "--host", "0.0.0.0", "--port", "80"]
-    ports:
-      - "80:80"
-    volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - bitaxe-data:/app/data
-      - ./metrics.csv:/app/metrics.csv:ro
-      - ./hostname_cache.json:/app/hostname_cache.json:ro
-      - ./web:/app/web:ro
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONIOENCODING=utf-8
-      - LANG=en_US.UTF-8
-      - LC_ALL=en_US.UTF-8
-    depends_on:
-      - bitaxe-enhanced
     networks:
       - bitaxe-network
 
