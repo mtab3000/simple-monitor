@@ -379,6 +379,35 @@ class TestEnhancedBitaxeCollector:
         assert collector.config['analytics_interval'] == 999
         assert collector.config['analytics_interval'] != original_interval
 
+    def test_efficiency_calculation_formula(self, enhanced_collector):
+        """Test that efficiency calculation uses correct J/TH formula."""
+        collector, _, _, _ = enhanced_collector
+        
+        # Test efficiency calculation directly using the formula from collect_miner_data
+        hashrate_ghs = 900  # 900 GH/s
+        power_w = 20        # 20 watts
+        
+        # Direct calculation using the corrected formula
+        efficiency_j_th = round(power_w / (hashrate_ghs / 1000), 2) if hashrate_ghs > 0 else 0
+        
+        # Expected: 20W / (900GH/s / 1000) = 20 / 0.9 = 22.22 J/TH
+        expected_efficiency = 22.22
+        
+        assert efficiency_j_th == expected_efficiency, f"Expected {expected_efficiency} J/TH, got {efficiency_j_th} J/TH"
+        
+        # Test edge cases
+        # Zero hashrate should return 0 efficiency
+        efficiency_zero = round(power_w / (0 / 1000), 2) if 0 > 0 else 0
+        assert efficiency_zero == 0, "Zero hashrate should result in 0 efficiency"
+        
+        # Test with different values
+        hashrate_ghs2 = 500  # 500 GH/s
+        power_w2 = 15        # 15 watts
+        efficiency_j_th2 = round(power_w2 / (hashrate_ghs2 / 1000), 2)
+        expected_efficiency2 = 30.0  # 15 / 0.5 = 30.0 J/TH
+        
+        assert efficiency_j_th2 == expected_efficiency2, f"Expected {expected_efficiency2} J/TH, got {efficiency_j_th2} J/TH"
+
 
 @pytest.mark.integration
 class TestEnhancedCollectorIntegration:

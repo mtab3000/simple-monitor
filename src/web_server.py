@@ -13,8 +13,8 @@ from typing import Dict, List, Optional
 from flask import Flask, render_template, jsonify, request
 import yaml
 
-from .cli_view import load_csv_data, get_latest_data_by_miner
-from .database import BitaxeDatabase
+from cli_view import load_csv_data, get_latest_data_by_miner
+from database import BitaxeDatabase
 
 
 class BitaxeWebServer:

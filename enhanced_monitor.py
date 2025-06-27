@@ -13,7 +13,7 @@ script_dir = Path(__file__).parent
 src_dir = script_dir / "src"
 sys.path.insert(0, str(src_dir))
 
-from src.enhanced_collector import main
+from enhanced_collector import main
 
 if __name__ == "__main__":
     main()

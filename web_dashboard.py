@@ -13,7 +13,7 @@ script_dir = Path(__file__).parent
 src_dir = script_dir / "src"
 sys.path.insert(0, str(src_dir))
 
-from src.web_server import main
+from web_server import main
 
 if __name__ == "__main__":
     main()
