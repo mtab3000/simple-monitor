@@ -3,4 +3,8 @@ miners:
   - 192.168.1.46
   - 192.168.1.47
 poll_interval: 10
+timeout: 10
+max_retries: 3
+retry_delay: 2
+data_validation: true
 csv_path: metrics.csv
