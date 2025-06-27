@@ -7,6 +7,7 @@ class BitaxeDashboard {
         this.isRefreshing = true;
         this.charts = {}; // Store chart instances
         this.historicalData = {}; // Store historical data for charts
+        this.isLoading = false; // Prevent recursive loading
         
         this.init();
     }
@@ -61,7 +62,13 @@ class BitaxeDashboard {
     }
     
     async loadData() {
+        // Prevent recursive calls
+        if (this.isLoading) {
+            return;
+        }
+        
         try {
+            this.isLoading = true;
             this.showLoading();
             
             // Load fleet stats and miner data in parallel
@@ -91,6 +98,7 @@ class BitaxeDashboard {
             console.error('Error loading data:', error);
             this.showError(`Failed to load data: ${error.message}`);
         } finally {
+            this.isLoading = false;
             this.hideLoading();
         }
     }
@@ -345,7 +353,13 @@ class BitaxeDashboard {
     }
     
     updateCharts(miners) {
-        miners.forEach(miner => {
+        // Debounce chart updates to prevent excessive redraws
+        if (this.chartUpdateTimeout) {
+            clearTimeout(this.chartUpdateTimeout);
+        }
+        
+        this.chartUpdateTimeout = setTimeout(() => {
+            miners.forEach(miner => {
             const minerId = miner.ip.replace(/\./g, '-');
             
             // Update historical data
@@ -380,7 +394,8 @@ class BitaxeDashboard {
             // Create or update charts
             this.createHashrateChart(minerId, data);
             this.createEfficiencyChart(minerId, data);
-        });
+            });
+        }, 100); // 100ms debounce
     }
     
     createHashrateChart(minerId, data) {
@@ -554,7 +569,7 @@ class BitaxeDashboard {
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new BitaxeDashboard();
+    window.dashboard = new BitaxeDashboard();
 });
 
 // Handle page visibility change to pause/resume auto-refresh
